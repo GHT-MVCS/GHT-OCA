@@ -656,6 +656,7 @@ function procesarDF(rows) {
 
     const fbe     = corregirFBE(r['FBE']);
     const pallets = parseFloat(String(r['PALLETS']||'0').replace(',','.'))||0;
+    const vehiculos = parseFloat(String(r['VEHICULOS']||'0').replace(',','.'))||0;
     const tpdc    = parseFloat(r['TPDC'])||16;
     const lineasR = parseFloat(r['LINEAS_R'])||1;
 
@@ -692,7 +693,7 @@ function procesarDF(rows) {
       FECHA_RESERVA_DT:fechaReserva, FECHA_RES_LABEL:fechaResLabel,
       ETD_FINAL_DT:etdFinal, FH_ATD_DT:fhAtd, ETD_REAL_DT:etdReal,
       HID_R:hidRaw, HID_DT:hidDt,
-      FBE:fbe, PALLETS:pallets, TPDC:tpdc, LINEAS_R:lineasR,
+      FBE:fbe, VEHICULOS:vehiculos, PALLETS:pallets, TPDC:tpdc, LINEAS_R:lineasR,
       GRUPO:r['GRUPO']||'', FECHA_RESERVA:r['FECHA_RESERVA']||'',
       CF_TRASLADO:cfTraslado, FECHA_TRASLADO_DT:fechaTraslado, HORA_TRASLADO:horaTraslado,
       HID_DT_SIM:null, LINEAS_R_SIM:null, TPDC_SIM:null, OCA_SIM:null, TIENE_TRASLADO:false,
@@ -937,7 +938,7 @@ function renderChart(){
 
   dff.forEach(r=>{
     r.LINEAS_R=r.LINEAS_R||1; r.TPDC=r.TPDC||16;
-    const ds=r.FBE>0&&r.TPDC>0?(r.FBE*r.TPDC)/r.LINEAS_R:0;
+    const ds=((r.FBE||0)*(r.TPDC||0))/r.LINEAS_R + (r.VEHICULOS||0)*5*60;
     r.HFD_REAL=r.HID_DT?addSec(r.HID_DT,ds):null;
     r.HFD_LIMITE=calcularLimiteHFD(r);
     r.X_FIN=r.HFD_LIMITE||(r.HFD_REAL?addSec(r.HFD_REAL,1800):null);
@@ -974,7 +975,7 @@ function renderChart(){
       texts.push(`<b>${String(r.OTA_ID||'').replace('_','')} - ${String(r.ID_VUELO||'').replace('_','')} - ${r.FECHA_RES_LABEL}</b><br>${r._G}${r._P} Plls | ${r._L} Vent`);
       cd.push([r.OTA_ID,r.MATRICULA||'—',fmtHM(r.HID_DT),fmtHM(r.HFD_REAL),fmtHM(r.X_FIN),
         r.ETD_REAL_DT?fmtDMHM(r.ETD_REAL_DT):'N/A',r.FH_ATD_DT?fmtDMHM(r.FH_ATD_DT):'N/A',
-        r.FBE.toLocaleString('es-CO'),r.TPDC,r.TIENE_TRASLADO?'Sí':'No',`${r.PORC_OCUP||0}%`,String(r.LIBRES??0)]);
+        r.FBE.toLocaleString('es-CO'),r.VEHICULOS,r.TIENE_TRASLADO?'Sí':'No',`${r.PORC_OCUP||0}%`,String(r.LIBRES??0)]);
     });
     if(!xs.length) return;
     traces.push({type:'bar',name:id,x:xs.map((s,i)=>xe[i]-s),base:xs,y:ys,orientation:'h',width:.82,
@@ -982,7 +983,7 @@ function renderChart(){
       text:texts,textposition:'inside',insidetextanchor:'middle',
       textfont:{color:'white',size:12,family:'Rajdhani, sans-serif'},
       customdata:cd,
-      hovertemplate:'<b>✈️ %{customdata[0]}</b><br>🔢 MAT: %{customdata[1]}<br>📦 FBE: %{customdata[7]} | ⏱️ %{customdata[8]}s<br>🕐 HID: %{customdata[2]} | 🏁 HFD: %{customdata[3]}<br>🚪 Salida CF: %{customdata[4]}<br>✈️ ETD: %{customdata[5]}<br>🛬 ATD: %{customdata[6]}<br>🔄 Traslado: %{customdata[9]}<extra></extra>',
+        hovertemplate:'<b>✈️ %{customdata[0]}</b><br>🔢 MAT: %{customdata[1]}<br>📦 FBE: %{customdata[7]}|⏱️%{customdata[8]}s <br>🚗 VEHICULOS: %{customdata[8]}<br>🕐 HID: %{customdata[2]} | 🏁 HFD: %{customdata[3]}<br>🚪 Salida CF: %{customdata[4]}<br>✈️ ETD: %{customdata[5]}<br>🛬 ATD: %{customdata[6]}<br>🔄 Traslado: %{customdata[9]}<extra></extra>',
       showlegend:false});
   });
 
