@@ -8,359 +8,363 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root {
-    --navy: #0a1628;
-    --navy2: #0f2040;
-    --accent: #1d6fa4;
-    --gold: #f0b429;
-    --green: #27ae60;
-    --red: #e74c3c;
-    --purple: #8e44ad;
-    --blue-light: #3498db;
-    --panel-bg: #0d1f38;
-    --bar-bg: #0f2644;
-    --border: rgba(255,255,255,0.08);
-    --text: #e8f0fe;
-    --text-dim: #8faac5;
-    --font-head: 'Rajdhani', sans-serif;
-    --font-mono: 'IBM Plex Mono', monospace;
+    --navy: #0a1628; --navy2: #0f2040; --accent: #1d6fa4;
+    --gold: #f0b429; --green: #27ae60; --red: #e74c3c;
+    --purple: #8e44ad; --blue-light: #3498db;
+    --bar-bg: #0f2644; --border: rgba(255,255,255,0.08);
+    --text: #e8f0fe; --text-dim: #8faac5;
+    --font-head: 'Rajdhani', sans-serif; --font-mono: 'IBM Plex Mono', monospace;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text); font-family: var(--font-head); min-height: 100vh; overflow-x: hidden; }
 
-  body {
-    background: var(--navy);
-    color: var(--text);
-    font-family: var(--font-head);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ─── TOP PANEL ─── */
+  /* TOP PANEL */
   #panel-totales {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 1000;
-    background: linear-gradient(90deg, #0a1628 0%, #0d2245 50%, #0a1628 100%);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: linear-gradient(90deg,#0a1628 0%,#0d2245 50%,#0a1628 100%);
     border-bottom: 2px solid var(--gold);
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 8px 20px;
-    min-height: 56px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 8px 20px; min-height: 56px; box-shadow: 0 4px 24px rgba(0,0,0,.5);
   }
+  .panel-item { display:flex; align-items:center; gap:8px; font-size:15px; letter-spacing:.04em; }
+  .panel-item span { color:var(--text-dim); }
+  .panel-item b { font-size:20px; font-weight:700; }
+  .panel-divider { width:1px; height:36px; background:rgba(255,255,255,.15); }
+  .vuelos-detail { display:flex; gap:8px; flex-wrap:wrap; }
+  .vuelo-badge { padding:2px 10px; border-radius:12px; font-size:13px; font-weight:700; font-family:var(--font-mono); }
 
-  .panel-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    letter-spacing: 0.04em;
-  }
-  .panel-item span { color: var(--text-dim); font-weight: 400; }
-  .panel-item b { font-size: 20px; font-weight: 700; }
-  .panel-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.15); }
+  #main-content { margin-top:56px; }
 
-  .vuelos-detail { display: flex; gap: 8px; flex-wrap: wrap; }
-  .vuelo-badge {
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 700;
-    font-family: var(--font-mono);
-  }
+  /* HEADER */
+  #header-bar { background:var(--bar-bg); border-bottom:1px solid var(--border); padding:10px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  #header-bar h2 { font-size:26px; font-weight:700; letter-spacing:.06em; color:var(--gold); white-space:nowrap; }
+  .divider-v { color:rgba(255,255,255,.3); font-size:24px; }
+  .filter-group { display:flex; align-items:center; gap:8px; }
+  .filter-label { font-size:13px; font-weight:600; color:var(--text-dim); white-space:nowrap; }
 
-  /* ─── MAIN CONTENT ─── */
-  #main-content { margin-top: 56px; }
+  /* INPUTS */
+  input[type="date"],select,input[type="text"],input[type="number"] {
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.15);
+    color:var(--text); border-radius:4px; padding:5px 10px;
+    font-family:var(--font-mono); font-size:13px; outline:none; transition:border-color .2s;
+  }
+  input:focus,select:focus { border-color:var(--accent); }
+  select option { background:var(--navy2); }
 
-  /* ─── HEADER BAR ─── */
-  #header-bar {
-    background: var(--bar-bg);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
+  /* BUTTONS */
+  .btn { padding:7px 16px; border-radius:5px; border:none; cursor:pointer; font-family:var(--font-head); font-size:14px; font-weight:700; letter-spacing:.05em; transition:all .2s; display:inline-flex; align-items:center; gap:5px; }
+  .btn:hover { opacity:.85; transform:translateY(-1px); }
+  .btn:active { transform:translateY(0); }
+  .btn-green { background:var(--green); color:#fff; }
+  .btn-blue  { background:var(--blue-light); color:#fff; }
+  .btn-purple{ background:var(--purple); color:#fff; }
+  .btn-gold  { background:var(--gold); color:var(--navy); }
+  .btn-sm    { padding:4px 10px; font-size:12px; }
 
-  #header-bar h2 {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--gold);
-    white-space: nowrap;
-  }
+  /* TOOLBAR */
+  #toolbar { background:rgba(255,255,255,.03); border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .toolbar-label { font-size:13px; font-weight:600; color:var(--gold); }
 
-  .divider-v { color: rgba(255,255,255,0.3); font-size: 24px; }
+  /* OCA */
+  #oca-dropdown { position:relative; display:inline-block; }
+  #oca-popover { display:none; position:absolute; top:100%; left:0; background:var(--navy2); border:1px solid var(--border); border-radius:6px; padding:12px; min-width:220px; z-index:500; box-shadow:0 8px 32px rgba(0,0,0,.5); }
+  #oca-popover.open { display:block; }
+  .oca-check-item { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px; cursor:pointer; }
+  .oca-check-item input { accent-color:var(--gold); width:14px; height:14px; }
 
-  .filter-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:2000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:12px; width:90%; max-width:820px; max-height:85vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,.7); }
+  .modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .modal-header h3 { font-size:20px; font-weight:700; }
+  .modal-body { padding:20px 24px; }
+  .modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+  .close-btn { background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; }
+  .close-btn:hover { color:var(--red); }
 
-  .filter-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
+  /* IA TABLE */
+  .ia-table { width:100%; border-collapse:collapse; font-size:13px; font-family:var(--font-mono); }
+  .ia-table th { background:rgba(255,255,255,.06); color:var(--gold); padding:10px 12px; text-align:left; font-weight:600; border-bottom:1px solid var(--border); }
+  .ia-table td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .ia-table input,.ia-table select { width:100%; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); }
 
-  /* ─── INPUTS & SELECTS ─── */
-  input[type="date"], select, input[type="text"], input[type="number"] {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: var(--text);
-    border-radius: 4px;
-    padding: 5px 10px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  input[type="date"]:focus, select:focus, input[type="text"]:focus, input[type="number"]:focus {
-    border-color: var(--accent);
-  }
-  select option { background: var(--navy2); }
+  #chart-container { padding:10px 16px; }
 
-  /* ─── BUTTONS ─── */
-  .btn {
-    padding: 7px 16px;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-head);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .btn:hover { opacity: 0.85; transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
-  .btn-green { background: var(--green); color: #fff; }
-  .btn-blue { background: var(--blue-light); color: #fff; }
-  .btn-purple { background: var(--purple); color: #fff; }
-  .btn-gold { background: var(--gold); color: var(--navy); }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  /* TOAST */
+  #toast { position:fixed; top:70px; right:20px; background:var(--green); color:#fff; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; z-index:3000; display:none; box-shadow:0 4px 20px rgba(0,0,0,.4); }
 
-  /* ─── TOOLBAR ─── */
-  #toolbar {
-    background: rgba(255,255,255,0.03);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  /* LOADING */
+  #loading { position:fixed; inset:0; background:rgba(10,22,40,.92); z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+  #loading.hidden { display:none; }
+  .spinner { width:56px; height:56px; border:4px solid rgba(240,180,41,.2); border-top-color:var(--gold); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-size:18px; font-weight:600; color:var(--gold); letter-spacing:.1em; }
 
-  .toolbar-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gold);
-    white-space: nowrap;
-  }
+  #fecha-indicador { font-size:12px; color:var(--text-dim); margin-left:6px; }
+  .hint { font-size:11px; color:var(--text-dim); margin-top:6px; font-style:italic; }
 
-  /* ─── OCA CHECKBOXES ─── */
-  #oca-dropdown {
-    position: relative;
-    display: inline-block;
-  }
-  #oca-popover {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: var(--navy2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px;
-    min-width: 220px;
-    z-index: 500;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  #oca-popover.open { display: block; }
-  .oca-check-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .oca-check-item input { accent-color: var(--gold); width: 14px; height: 14px; }
+  /* ========== MODAL PLAN VUELOS - TABLA STICKY ESTABLE ========== */
 
-  /* ─── MODAL ─── */
-  .modal-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal-box {
-    background: var(--navy2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    width: 90%;
-    max-width: 820px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-  }
-  .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .modal-header h3 { font-size: 20px; font-weight: 700; }
-  .modal-body { padding: 20px 24px; }
-  .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-  }
-  .close-btn {
-    background: none; border: none; color: var(--text-dim);
-    font-size: 22px; cursor: pointer;
-  }
-  .close-btn:hover { color: var(--red); }
+#modal-plan-vuelos .modal-box {
+  max-width: 98vw;
+  width: 98vw;
+  height: 92vh;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* ─── IA TABLE ─── */
-  .ia-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    font-family: var(--font-mono);
-  }
-  .ia-table th {
-    background: rgba(255,255,255,0.06);
-    color: var(--gold);
-    padding: 10px 12px;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
-  }
-  .ia-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
-  .ia-table tr:last-child td { border-bottom: none; }
-  .ia-table input, .ia-table select {
-    width: 100%;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
+.layout-dos-columnas {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
 
-  /* ─── CHART CONTAINER ─── */
-  #chart-container {
-    padding: 10px 16px;
-    position: relative;
-  }
+/* COLUMNA TABLA */
+.col-tabla {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0d1f38;
+  border-radius: 12px;
+  padding: 0;
+}
 
-  /* ─── TOAST ─── */
-  #toast {
-    position: fixed;
-    top: 70px; right: 20px;
-    background: var(--green);
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 14px;
-    z-index: 3000;
-    display: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    animation: slideIn 0.3s ease;
-  }
-  @keyframes slideIn {
-    from { transform: translateX(100px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
-  }
+.tabla-scroll-container {
+  flex: 1;
+  overflow: auto;
+  border-radius: 8px;
+  position: relative;
+}
 
-  /* ─── LOADING OVERLAY ─── */
-  #loading {
-    position: fixed; inset: 0;
-    background: rgba(10,22,40,0.92);
-    z-index: 5000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-  }
-  #loading.hidden { display: none; }
-  .spinner {
-    width: 56px; height: 56px;
-    border: 4px solid rgba(240,180,41,0.2);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--gold);
-    letter-spacing: 0.1em;
-  }
+/* ESTILOS BASE DE LA TABLA */
+#tabla-vuelos-dias {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  background: #0d1f38;
+  width: max-content;
+  min-width: 100%;
+}
 
-  /* ─── FECHA INDICATOR ─── */
-  #fecha-indicador {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-left: 6px;
-  }
+#tabla-vuelos-dias th {
+  background: #0f2040;
+  color: var(--gold);
+  padding: 10px 12px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
 
-  /* ─── INFO HINT ─── */
-  .hint {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 6px;
-    font-style: italic;
-  }
+#tabla-vuelos-dias td {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: #0d1f38;
+  text-align: center;
+  white-space: nowrap;
+}
 
-  /* Responsive */
-  @media (max-width: 768px) {
-    #panel-totales { flex-wrap: wrap; gap: 8px; }
-    #header-bar, #toolbar { flex-direction: column; align-items: flex-start; }
-  }
+/* Primera columna (Fecha Reserva) */
+#tabla-vuelos-dias td:first-child,
+#tabla-vuelos-dias th:first-child {
+  text-align: left;
+  font-weight: 700;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  min-width: 96px;
+  width: 96px;
+  max-width: 96px;
+}
+
+#tabla-vuelos-dias th:first-child {
+  background: #0f2040;
+  z-index: 35;
+}
+
+/* Segunda columna (Estación) */
+#tabla-vuelos-dias td:nth-child(2),
+#tabla-vuelos-dias th:nth-child(2) {
+  position: sticky;
+  left: 96px;
+  z-index: 20;
+  background: #0d1f38;
+  min-width: 74px;
+  width: 74px;
+  max-width: 74px;
+}
+
+#tabla-vuelos-dias th:nth-child(2) {
+  background: #0f2040;
+  z-index: 35;
+}
+
+/* Tercera columna (Vuelo) */
+#tabla-vuelos-dias td:nth-child(3),
+#tabla-vuelos-dias th:nth-child(3) {
+  position: sticky;
+  left: 170px;
+  z-index: 20;
+  background: #0d1f38;
+  min-width: 96px;
+  width: 96px;
+  max-width: 96px;
+}
+
+#tabla-vuelos-dias th:nth-child(3) {
+  background: #0f2040;
+  z-index: 35;
+}
+
+/* Cuarta columna (Matrícula/OTA) */
+#tabla-vuelos-dias td:nth-child(4),
+#tabla-vuelos-dias th:nth-child(4) {
+  position: sticky;
+  left: 266px;
+  z-index: 20;
+  background: #0d1f38;
+  min-width: 150px;
+  width: 150px;
+  max-width: 150px;
+}
+
+#tabla-vuelos-dias th:nth-child(4) {
+  background: #0f2040;
+  z-index: 35;
+}
+
+/* Quinta columna (FBE) */
+#tabla-vuelos-dias td:nth-child(5),
+#tabla-vuelos-dias th:nth-child(5) {
+  position: sticky;
+  left: 416px;
+  z-index: 20;
+  background: #0d1f38;
+  min-width: 78px;
+  width: 78px;
+  max-width: 78px;
+  box-shadow: 3px 0 8px -3px rgba(0,0,0,0.45);
+}
+
+#tabla-vuelos-dias th:nth-child(5) {
+  background: #0f2040;
+  z-index: 35;
+}
+
+/* Columnas móviles (fechas) */
+#tabla-vuelos-dias td:nth-child(n+6),
+#tabla-vuelos-dias th:nth-child(n+6) {
+  position: static;
+  min-width: 105px;
+}
+
+/* Badges de estación */
+.est-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  min-width: 55px;
+}
+.est-bog { background: rgba(52,152,219,.25); color: #87CEEB; border: 1px solid #3498db; }
+.est-mde { background: rgba(39,174,96,.25); color: #98FB98; border: 1px solid #27ae60; }
+.est-uio { background: rgba(240,180,41,.25); color: #f0b429; border: 1px solid #f0b429; }
+.est-otro { background: rgba(142,68,173,.25); color: #DDA0DD; border: 1px solid #8e44ad; }
+
+/* Colores ATD/ETD */
+.c-atd     { color: #27ae60; font-weight: 600; }
+.c-atd-late{ color: #e74c3c; font-weight: 600; }
+.c-etd-ok  { color: #3498db; font-weight: 600; }
+.c-etd-late{ color: #f0b429; font-weight: 600; }
+.c-vacia   { color: #555; }
+
+/* Filas con borde de color */
+#tabla-vuelos-dias tr.fila-bog td:first-child { border-left: 4px solid #3498db; }
+#tabla-vuelos-dias tr.fila-mde td:first-child { border-left: 4px solid #27ae60; }
+#tabla-vuelos-dias tr.fila-uio td:first-child { border-left: 4px solid #f0b429; }
+#tabla-vuelos-dias tr.fila-otro td:first-child { border-left: 4px solid #8e44ad; }
+
+/* Hover */
+#tabla-vuelos-dias tr:hover td {
+  background: rgba(255,255,255,0.04);
+}
+
+#tabla-vuelos-dias tr:hover td:nth-child(-n+5) {
+  background: #0d1f38;
+}
+
+/* COLUMNA MAPA */
+.col-mapa {
+  flex: 1;
+  min-width: 320px;
+  background: #0a1628;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-mapa h4 {
+  color: var(--gold);
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+#mapa-container-plan {
+  flex: 1;
+  background: #0a1628;
+  border-radius: 8px;
+  min-height: 0;
+}
+
+.placeholder-mapa {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--text-dim);
+  background: #0a1628;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+}
+
+#modal-plan-vuelos .modal-body {
+  padding: 14px 18px;
+}
+
+  @media(max-width:768px){ #panel-totales{flex-wrap:wrap;gap:8px;} #header-bar,#toolbar{flex-direction:column;align-items:flex-start;} }
+
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">✈️ CARGANDO DATOS OPERACIONALES...</div>
-</div>
-
-<!-- TOAST -->
-<div id="toast">✅ Datos actualizados desde Exporinter 🌎</div>
+<div id="loading"><div class="spinner"></div><div class="loading-text">✈️ CARGANDO DATOS OPERACIONALES...</div></div>
+<div id="toast"></div>
 
 <!-- TOP PANEL -->
 <div id="panel-totales">
-  <div class="panel-item">
-    <span>TOTAL FBE:</span>
-    <b id="stat-fbe" style="color:#f0b429;">—</b>
-  </div>
+  <div class="panel-item"><span>TOTAL FBE:</span><b id="stat-fbe" style="color:#f0b429;">—</b></div>
   <div class="panel-divider"></div>
-  <div class="panel-item">
-    <span>PALLETS:</span>
-    <b id="stat-pallets">—</b>
-  </div>
+  <div class="panel-item"><span>PALLETS:</span><b id="stat-pallets">—</b></div>
   <div class="panel-divider"></div>
   <div class="panel-item">
     <span>✈️ VUELOS:</span>
@@ -373,71 +377,50 @@
   </div>
   <div class="panel-divider"></div>
   <div class="panel-item">
-    <span>🔄 TRASLADOS:</span>
-    <b id="stat-traslados" style="color:#f0b429;">0</b>
+    <span>🔄 TRASLADOS:</span><b id="stat-traslados" style="color:#f0b429;">0</b>
+    <button class="btn btn-blue btn-sm" onclick="refrescarDatos()" title="Refrescar">🔄</button>
+    <button class="btn btn-purple btn-sm" onclick="abrirPlanVuelos()" title="Plan de vuelos ETD vs ATD">✈️ Plan vuelos</button>
   </div>
 </div>
 
-<!-- MAIN -->
 <div id="main-content">
-
-  <!-- HEADER BAR -->
   <div id="header-bar">
     <h2>✈️ PLAN OCA</h2>
     <span class="divider-v">|</span>
-
-    <!-- OCA Filter -->
     <div class="filter-group">
       <span class="filter-label">🔍 Cuarto frío:</span>
       <div id="oca-dropdown">
         <button class="btn btn-gold btn-sm" onclick="toggleOcaPopover()">Seleccionar OCA ▾</button>
-        <div id="oca-popover">
-          <div id="oca-checklist"></div>
-        </div>
+        <div id="oca-popover"><div id="oca-checklist"></div></div>
       </div>
     </div>
-
-    <!-- Date Filter -->
     <div class="filter-group">
       <span class="filter-label">📅 Fecha O:</span>
-      <input type="date" id="fecha-inicio" />
+      <input type="date" id="fecha-inicio"/>
       <span style="color:var(--text-dim)">→</span>
-      <input type="date" id="fecha-fin" />
+      <input type="date" id="fecha-fin"/>
       <button class="btn btn-green btn-sm" onclick="setDiaUnico()">📅 Día único</button>
       <span id="fecha-indicador"></span>
     </div>
   </div>
 
-  <!-- TOOLBAR (Simulación) -->
   <div id="toolbar">
     <span class="toolbar-label">🛠️</span>
-
-    <span class="filter-label">1. # de vuelo:</span>
-    <select id="sim-ota-id" style="width:150px;">
-      <option value="">Ej: QT_1</option>
-    </select>
-
+    <span class="filter-label">1. # vuelo:</span>
+    <select id="sim-ota-id" style="width:150px;"><option value="">Ej: QT_1</option></select>
     <span class="filter-label">2. Nueva HID:</span>
-    <input type="date" id="sim-fecha" style="width:140px;" />
-    <input type="text" id="sim-hora" placeholder="HH:MM" style="width:72px;" />
-
+    <input type="date" id="sim-fecha" style="width:140px;"/>
+    <input type="text" id="sim-hora" placeholder="HH:MM" style="width:72px;"/>
     <span class="filter-label">3. Ventanillas:</span>
-    <input type="number" id="sim-lineas" value="1" min="1" max="20" style="width:60px;" />
-
+    <input type="number" id="sim-lineas" value="1" min="1" max="20" style="width:60px;"/>
     <span class="filter-label">4. Mover a (OCA):</span>
-    <select id="sim-oca" style="width:160px;">
-      <option value="">Seleccionar...</option>
-    </select>
-
+    <select id="sim-oca" style="width:160px;"><option value="">Seleccionar...</option></select>
     <span class="filter-label">TPDC (seg):</span>
-    <input type="number" id="sim-tpdc" value="16" min="1" style="width:70px;" />
-
+    <input type="number" id="sim-tpdc" value="16" min="1" style="width:70px;"/>
     <button class="btn btn-green" onclick="aplicarSimulacion()">⚙️ AJUSTAR</button>
     <button class="btn btn-purple" onclick="openModal()">🤖 OPTIMIZACIÓN IA</button>
-    <button class="btn btn-blue" onclick="refrescarDatos()">🔄 REFRESCAR DATOS</button>
   </div>
 
-  <!-- CHART -->
   <div id="chart-container">
     <div id="grafico-maestro" style="width:100%;min-height:600px;"></div>
   </div>
@@ -451,22 +434,14 @@
       <button class="close-btn" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <p style="font-weight:700; margin-bottom:8px; color:var(--gold);">📅 Instrucciones:</p>
-      <ul class="hint" style="padding-left:16px; margin-bottom:16px;">
-        <li>Formato de fecha/hora: DD/MM/AAAA HH:MM (ej: 16/04/2026 10:00)</li>
+      <p style="font-weight:700;margin-bottom:8px;color:var(--gold);">📅 Instrucciones:</p>
+      <ul class="hint" style="padding-left:16px;margin-bottom:16px;">
+        <li>Formato: DD/MM/AAAA HH:MM (ej: 16/04/2026 10:00)</li>
         <li>Ventanillas: mínimo 1 por cuarto frío</li>
-        <li>Marque 'SI' en Activo para aplicar cambios a esa OCA</li>
+        <li>Marque 'SI' en Activo para aplicar cambios</li>
       </ul>
-      <table class="ia-table" id="tabla-ia">
-        <thead>
-          <tr>
-            <th>Activo</th>
-            <th>OCA</th>
-            <th>Capacidad</th>
-            <th>Ventanillas</th>
-            <th>Nueva Fecha/Hora (DD/MM/AAAA HH:MM)</th>
-          </tr>
-        </thead>
+      <table class="ia-table">
+        <thead><tr><th>Activo</th><th>OCA</th><th>Capacidad</th><th>Ventanillas</th><th>Nueva Fecha/Hora (DD/MM/AAAA HH:MM)</th></tr></thead>
         <tbody id="tabla-ia-body"></tbody>
       </table>
     </div>
@@ -476,812 +451,1153 @@
   </div>
 </div>
 
+<!-- ══════════ MODAL PLAN DE VUELOS + MAPA ══════════ -->
+<div class="modal-overlay" id="modal-plan-vuelos">
+  <div class="modal-box" style="max-width:98vw;width:98vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;">
+    <div class="modal-header" style="flex-shrink:0;">
+      <h3>📋 PLAN DE VUELOS — ETD vs ATD &nbsp;|&nbsp; Todas las estaciones</h3>
+      <button class="close-btn" onclick="cerrarPlanVuelos()">×</button>
+    </div>
+
+    <!-- Filtros Plan Vuelos -->
+    <div style="flex-shrink:0;padding:10px 20px;background:#0a1628;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <span class="filter-label">📅 Fecha Reserva:</span>
+      <input type="date" id="pv-fecha-inicio" style="width:140px;"/>
+      <span style="color:var(--text-dim)">→</span>
+      <input type="date" id="pv-fecha-fin" style="width:140px;"/>
+      <span class="filter-label">🏠 Estación:</span>
+      <select id="pv-estacion" style="width:120px;"><option value="">Todas</option><option value="BOG">BOG</option><option value="MDE">MDE</option><option value="UIO">UIO</option></select>
+      <button class="btn btn-green btn-sm" onclick="cargarPlanVuelos()">🔄 Cargar</button>
+      <button class="btn btn-blue btn-sm" onclick="inicializarMapaPlanVuelos()">🗺️ Cargar Mapa</button>      <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-gold btn-sm" onclick="debugAdsb()">🔍 Ver datos ADS-B</button>
+        <div class="panel-item" style="font-size:13px;"><span>Total:</span><b id="pv-total">0</b></div>
+        <div class="panel-item" style="font-size:13px;"><span>🛫 ATD:</span><b id="pv-atd" style="color:#27ae60;">0</b></div>
+        <div class="panel-item" style="font-size:13px;"><span>🕐 ETD pend.:</span><b id="pv-etd" style="color:#3498db;">0</b></div>
+        <div class="panel-item" style="font-size:13px;"><span>❌ Tarde:</span><b id="pv-tarde" style="color:#e74c3c;">0</b></div>
+      </div>
+    </div>
+
+    <!-- Layout dos columnas: TABLA + MAPA -->
+    <div class="modal-body" style="flex:1;overflow:hidden;padding:14px 18px;">
+      <div class="layout-dos-columnas">
+        
+        <!-- COLUMNA IZQUIERDA: TABLA CON SCROLL -->
+        <div class="col-tabla">
+          <div class="tabla-scroll-container">
+            <table id="tabla-vuelos-dias" style="min-width:100%;width:max-content;">
+              <thead id="tabla-dias-header"></thead>
+              <tbody id="tabla-dias-body">
+                <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-dim);">Seleccione fechas y presione 🔄 Cargar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- COLUMNA DERECHA: MAPA -->
+        <div class="col-mapa">
+          <h4>🗺️ UBICACIÓN EN TIEMPO REAL (ADS-B)</h4>
+          <div id="mapa-container-plan" style="flex:1;min-height:0;">
+            <div class="placeholder-mapa" style="height:100%;">
+              <span style="font-size:48px;">🗺️</span>
+              <p>Mapa de seguimiento de vuelos</p>
+              <p class="hint">Presione "Cargar Mapa" para ver la ubicación de los vuelos activos</p>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+
+    <div class="modal-footer" style="flex-shrink:0;align-items:center;">
+      <span class="hint" style="margin-right:auto;">
+        ✅ ATD a tiempo &nbsp;|&nbsp; 🔴 ATD tarde &nbsp;|&nbsp; 🕐 ETD pendiente &nbsp;|&nbsp; ⚠️ ETD vencido sin ATD
+      </span>
+      <button class="btn btn-gold" onclick="cerrarPlanVuelos()">Cerrar</button>
+    </div>
+  </div>
+</div>
 <script>
-// ===================================================
-//  CONFIGURACIÓN GLOBAL
-// ===================================================
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
 const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQeRe5r5Hfk7b3GNrid62SYsGK-YZuXrMXGHc9qR6TcKzB4a__POp_vc1nlhCHse-4prvgAegWxcIac/pub?gid=0&single=true&output=csv";
 
 const CAPACIDADES = {
-  "BOG_GIRAG_TC1": 132,
-  "BOG_GIRAG_TC2": 33,
-  "BOG_LG_TC1": 33,
-  "BOG_LG_TC1_GIRAG": 33,
-  "BOG_AEROSAN": 33,
-  "MDE_GIRAG": 110
+  "BOG_GIRAG_TC1":132,"BOG_GIRAG_TC2":33,
+  "BOG_LG_TC1":33,"BOG_LG_TC1_GIRAG":33,
+  "BOG_AEROSAN":33,"MDE_GIRAG":110
 };
 
-const DIAS_ES = {"Mon":"Lun","Tue":"Mar","Wed":"Mié","Thu":"Jue","Fri":"Vie","Sat":"Sab","Sun":"Dom"};
+const DIAS_ES = {Mon:"Lun",Tue:"Mar",Wed:"Mié",Thu:"Jue",Fri:"Vie",Sat:"Sab",Sun:"Dom"};
 
 let dfGlobal = [];
 let simulaciones = {};
+let chartResizeObserver = null;
+let chartResizeTimer = null;
+let chartRerenderTimer = null;
+let chartIsRerendering = false;
+let lastChartContainerWidth = 0;
 
-// ===================================================
-//  UTILIDADES DE FECHA
-// ===================================================
-function parseDate(str) {
-  if (!str) return null;
-  // Intentar formato MM/DD/YYYY
-  let m = String(str).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (m) return new Date(+m[3], +m[1]-1, +m[2]);
-  // ISO
-  let d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
+// ═══════════════════════════════════════════
+//  PARSING FECHAS
+//  Fuente CSV: MM/DD/AAAA  y  MM/DD/AAAA HH:MM
+// ═══════════════════════════════════════════
+function parseDate(val) {
+  if (val === null || val === undefined) return null;
+  const s = String(val).trim();
+  if (!s || s === 'nan' || s === 'None' || s === '#N/A' || s === '') return null;
+
+  // Serial Excel
+  if (/^\d+(\.\d+)?$/.test(s) && parseFloat(s) > 1000) {
+    const d = new Date(Math.round((parseFloat(s) - 25569) * 86400000));
+    return isNaN(d) ? null : d;
+  }
+
+  // ISO AAAA-MM-DD [THH:MM]
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+    return isNaN(d) ? null : d;
+  }
+
+  // ── FORMATO PRINCIPAL: MM/DD/AAAA HH:MM[:SS]
+  // (también captura DD/MM/AAAA si el mes > 12, pero asumimos siempre USA)
+  const mConHora = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (mConHora) {
+    // Intentar MM/DD/AAAA primero; si el "mes" > 12, invertir como DD/MM/AAAA
+    let mm = +mConHora[1], dd = +mConHora[2], yyyy = +mConHora[3];
+    let hh = +mConHora[4], mi = +mConHora[5], ss = +(mConHora[6]||0);
+    if (mm > 12 && dd <= 12) { [mm, dd] = [dd, mm]; } // invertir si mes imposible
+    const d = new Date(yyyy, mm-1, dd, hh, mi, ss);
+    return isNaN(d) ? null : d;
+  }
+
+  // ── MM/DD/AAAA (solo fecha)
+  const mSolo = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mSolo) {
+    let mm = +mSolo[1], dd = +mSolo[2], yyyy = +mSolo[3];
+    if (mm > 12 && dd <= 12) { [mm, dd] = [dd, mm]; }
+    const d = new Date(yyyy, mm-1, dd);
+    return isNaN(d) ? null : d;
+  }
+
+  // Fallback
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
 }
 
 function parseHora(horaStr, fechaBase) {
-  if (!horaStr || horaStr === 'nan' || horaStr === 'None') return null;
+  if (!horaStr) return null;
   let s = String(horaStr).trim();
+  if (!s || ['nan','None','#N/A'].includes(s)) return null;
   if (!s.includes(':')) {
-    if (s.length === 1) s = `0${s}:00`;
-    else if (s.length === 2) s = `${s}:00`;
-    else if (s.length === 3) s = `0${s[0]}:${s.slice(1)}`;
-    else if (s.length === 4) s = `${s.slice(0,2)}:${s.slice(2)}`;
+    if (s.length===1) s=`0${s}:00`;
+    else if (s.length===2) s=`${s}:00`;
+    else if (s.length===3) s=`0${s[0]}:${s.slice(1)}`;
+    else if (s.length===4) s=`${s.slice(0,2)}:${s.slice(2)}`;
   }
-  let [h,mi] = s.split(':').map(Number);
-  if (isNaN(h) || isNaN(mi)) return null;
-  let d = new Date(fechaBase);
-  d.setHours(h, mi, 0, 0);
+  const [h,mi] = s.split(':').map(Number);
+  if (isNaN(h)||isNaN(mi)) return null;
+  const d = new Date(fechaBase);
+  d.setHours(h,mi,0,0);
   return d;
 }
 
 function corregirFBE(val) {
-  if (val === null || val === undefined || val === '') return 0;
-  if (typeof val === 'number') return val;
+  if (!val && val!==0) return 0;
+  if (typeof val==='number') return val;
   let s = String(val).trim();
-  if (s.includes(',') && s.includes('.')) {
-    if (s.indexOf(',') < s.indexOf('.')) s = s.replace(',','');
-    else s = s.replace('.','').replace(',','.');
-  } else if (s.includes(',') && !s.includes('.')) {
-    s = s.replace(',','');
-  }
-  return parseFloat(s) || 0;
+  if (s.includes(',') && s.includes('.'))
+    s = s.indexOf(',')<s.indexOf('.') ? s.replace(/,/g,'') : s.replace(/\./g,'').replace(',','.');
+  else if (s.includes(',') && !s.includes('.'))
+    s = s.replace(/,/g,'');
+  return parseFloat(s)||0;
 }
 
-function fmtHM(dt) {
-  if (!dt) return 'N/A';
-  return dt.toTimeString().slice(0,5);
+// ═══════════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════════
+const p2 = n => String(n).padStart(2,'0');
+function fmtHM(dt)    { if(!dt) return 'N/A'; return `${p2(dt.getHours())}:${p2(dt.getMinutes())}`; }
+function fmtDate(dt)  { if(!dt) return ''; return `${p2(dt.getDate())}/${p2(dt.getMonth()+1)}`; }
+function fmtDMHM(dt)  { if(!dt) return 'N/A'; return `${fmtDate(dt)} ${fmtHM(dt)}`; }
+function fmtFullDT(dt){ if(!dt) return 'N/A'; return `${p2(dt.getMonth()+1)}/${p2(dt.getDate())}/${dt.getFullYear()} ${p2(dt.getHours())}:${p2(dt.getMinutes())}`; }
+function dayKey(dt)   { if(!dt) return ''; return `${dt.getFullYear()}-${p2(dt.getMonth()+1)}-${p2(dt.getDate())}`; }
+function todayStr()   { return new Date().toISOString().slice(0,10); }
+function addSec(dt,s) { return new Date(dt.getTime()+s*1000); }
+
+function parseFechaInput(v) {
+  if (!v) return null;
+  const [y,m,d] = v.split('-').map(Number);
+  return new Date(y,m-1,d,0,0,0);
 }
 
-function fmtDate(dt) {
-  if (!dt) return '';
-  return dt.toLocaleDateString('es-CO', {day:'2-digit',month:'2-digit'});
+function showToast(msg, color='#27ae60') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color;
+  t.style.display = 'block';
+  setTimeout(()=>t.style.display='none', 4000);
 }
 
-function addSeconds(dt, sec) {
-  return new Date(dt.getTime() + sec * 1000);
-}
-
-function todayStr() {
-  return new Date().toISOString().slice(0,10);
-}
-
-// ===================================================
+// ═══════════════════════════════════════════
 //  PROCESAR CSV
-// ===================================================
+// ═══════════════════════════════════════════
+function nk(k) { return k.trim().toUpperCase().replace(/\s+/g,'_'); }
+
 function procesarDF(rows) {
   return rows.map(row => {
-    // Normalizar columnas
-    let r = {};
-    for (let k in row) r[k.trim().toUpperCase()] = row[k];
+    const r = {};
+    for (const k in row) r[nk(k)] = row[k];
 
-    let fechaOp = parseDate(r['FECHA_OPERACION']);
-    let fechaRecep = parseDate(r['FID_R']);
-    let etdFinal = parseDate(r['ETD_FINAL']);
-    let fhAtd = parseDate(r['FH_ATD']);
+    const fechaRecep   = parseDate(r['FID_R']);
+    const fechaOp      = parseDate(r['FECHA_OPERACION']) || fechaRecep || parseDate(r['FECHA_RESERVA']);
+    const fechaReserva = parseDate(r['FECHA_RESERVA']);
+    const etdFinal     = parseDate(r['ETD_FINAL']);
+    const fhAtd        = parseDate(r['FH_ATD']);
 
-    let fbe = corregirFBE(r['FBE']);
-    let pallets = parseFloat(String(r['PALLETS']||'0').replace(',','.')) || 0;
-    let tpdc = parseFloat(r['TPDC']) || 16;
-    let lineasR = parseFloat(r['LINEAS_R']) || 1;
+    const fbe     = corregirFBE(r['FBE']);
+    const pallets = parseFloat(String(r['PALLETS']||'0').replace(',','.'))||0;
+    const tpdc    = parseFloat(r['TPDC'])||16;
+    const lineasR = parseFloat(r['LINEAS_R'])||1;
 
-    // Fecha base para HID
-    let fechaBase = fechaRecep || fechaOp || new Date();
-
-    // HID
+    const fechaBase = fechaRecep||fechaOp||new Date();
     let hidRaw = String(r['HID_R']||'').trim();
-    if (!hidRaw || hidRaw === 'nan') hidRaw = '09:00';
-    let hidDt = parseHora(hidRaw, fechaBase);
+    if (!hidRaw||hidRaw==='nan') hidRaw='09:00';
+    const hidDt = parseHora(hidRaw, fechaBase);
 
-    // ETD real
-    let etdReal = fhAtd || etdFinal;
+    const etdReal = fhAtd||etdFinal;
 
-    // CF_TRASLADO
-    let cfTraslado = r['CF_TRASLADO'] || r['CF TRASLADO'] || null;
-    if (cfTraslado && ['nan','None',''].includes(String(cfTraslado).trim())) cfTraslado = null;
+    let cfTraslado = r['CF_TRASLADO']||r['CF TRASLADO']||null;
+    if (cfTraslado&&['nan','None',''].includes(String(cfTraslado).trim())) cfTraslado=null;
+    const fechaTraslado = parseDate(r['FECHA_TRASLADO']||r['FECHA TRASLADO']||null);
+    const horaTraslado  = r['HORA_TRASLADO']||r['HORA TRASLADO']||null;
 
-    let fechaTraslado = parseDate(r['FECHA TRASLADO'] || r['FECHA_TRASLADO'] || null);
-    let horaTraslado = r['HORA TRASLADO'] || r['HORA_TRASLADO'] || null;
+    // ORIGEN: leer del CSV o inferir
+    let origen = String(r['ORIGEN']||'').trim();
+    if (!origen||origen==='nan') {
+      const oca = String(r['OCA']||'').toUpperCase();
+      origen = oca.startsWith('MDE')?'MDE': oca.startsWith('BOG')?'BOG': oca.startsWith('UIO')?'UIO':'OTRO';
+    }
+
+    // Label fecha reserva
+    let fechaResLabel = '';
+    if (fechaReserva) {
+      const dEn = fechaReserva.toLocaleDateString('en-US',{weekday:'short'});
+      fechaResLabel = (DIAS_ES[dEn]||dEn)+' '+p2(fechaReserva.getDate());
+    }
 
     return {
-      OTA_ID: r['OTA_ID'] || '',
-      OTA: r['OTA'] || '',
-      ID_VUELO: r['ID_VUELO'] || '',
-      OCA: r['OCA'] || '',
-      FECHA_OP_DT: fechaOp,
-      FECHA_RECEP_DT: fechaRecep,
-      ETD_FINAL_DT: etdFinal,
-      FH_ATD_DT: fhAtd,
-      ETD_REAL_DT: etdReal,
-      HID_R: hidRaw,
-      HID_DT: hidDt,
-      FBE: fbe,
-      PALLETS: pallets,
-      TPDC: tpdc,
-      LINEAS_R: lineasR,
-      GRUPO: r['GRUPO'] || '',
-      FECHA_RESERVA: r['FECHA_RESERVA'] || '',
-      CF_TRASLADO: cfTraslado,
-      FECHA_TRASLADO_DT: fechaTraslado,
-      HORA_TRASLADO: horaTraslado,
-      // Simulación
-      HID_DT_SIM: null,
-      LINEAS_R_SIM: null,
-      TPDC_SIM: null,
-      OCA_SIM: null,
-      TIENE_TRASLADO: false,
+      OTA_ID:r['OTA_ID']||'', OTA:r['OTA']||'', ID_VUELO:r['ID_VUELO']||'',
+      MATRICULA:r['MATRICULA']||'—', OCA:r['OCA']||'', ORIGEN:origen,
+      FECHA_OP_DT:fechaOp, FECHA_RECEP_DT:fechaRecep,
+      FECHA_RESERVA_DT:fechaReserva, FECHA_RES_LABEL:fechaResLabel,
+      ETD_FINAL_DT:etdFinal, FH_ATD_DT:fhAtd, ETD_REAL_DT:etdReal,
+      HID_R:hidRaw, HID_DT:hidDt,
+      FBE:fbe, PALLETS:pallets, TPDC:tpdc, LINEAS_R:lineasR,
+      GRUPO:r['GRUPO']||'', FECHA_RESERVA:r['FECHA_RESERVA']||'',
+      CF_TRASLADO:cfTraslado, FECHA_TRASLADO_DT:fechaTraslado, HORA_TRASLADO:horaTraslado,
+      HID_DT_SIM:null, LINEAS_R_SIM:null, TPDC_SIM:null, OCA_SIM:null, TIENE_TRASLADO:false,
     };
   });
 }
 
-// ===================================================
-//  LÍMITE HFD POR AEROLÍNEA
-// ===================================================
 function calcularLimiteHFD(row) {
   if (!row.ETD_REAL_DT) return null;
-  let ota = String(row.OTA||'').toUpperCase().replace(/[-_]/g,' ');
+  const ota = String(row.OTA||'').toUpperCase().replace(/[-_]/g,' ');
   let horas = 5;
-  if (['L7','UPS','TCB'].some(x => ota.split(' ').includes(x))) horas = 3;
-  else if (ota.includes('QT')) horas = 4;
-  return new Date(row.ETD_REAL_DT.getTime() - horas * 3600000);
+  if (['L7','UPS','TCB'].some(x=>ota.split(' ').includes(x))) horas=3;
+  else if (ota.includes('QT')) horas=4;
+  return new Date(row.ETD_REAL_DT.getTime()-horas*3600000);
 }
 
-// ===================================================
-//  CARGAR DATOS
-// ===================================================
+// ═══════════════════════════════════════════
+//  CARGAR CSV
+// ═══════════════════════════════════════════
 async function cargarDatos() {
   showLoading();
-  return new Promise((resolve, reject) => {
-    Papa.parse(URL_CSV, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        dfGlobal = procesarDF(results.data.filter(r => Object.values(r).some(v => v)));
-        hideLoading();
-        resolve();
-      },
-      error: function(err) {
-        hideLoading();
-        reject(err);
-      }
+  return new Promise((res,rej)=>{
+    Papa.parse(URL_CSV,{
+      download:true, header:true,
+      complete(r){ dfGlobal=procesarDF(r.data.filter(x=>Object.values(x).some(v=>v))); hideLoading(); res(); },
+      error(e){ hideLoading(); rej(e); }
     });
   });
 }
 
-// ===================================================
+// ═══════════════════════════════════════════
 //  OCA POPOVER
-// ===================================================
+// ═══════════════════════════════════════════
 function buildOcaChecklist() {
-  let container = document.getElementById('oca-checklist');
-  container.innerHTML = '';
-  Object.keys(CAPACIDADES).forEach(k => {
-    let div = document.createElement('div');
-    div.className = 'oca-check-item';
-    div.innerHTML = `<input type="checkbox" value="${k}" checked id="oca_${k}"><label for="oca_${k}">${k}</label>`;
-    container.appendChild(div);
+  const c = document.getElementById('oca-checklist'); c.innerHTML='';
+  Object.keys(CAPACIDADES).forEach(k=>{
+    const d=document.createElement('div'); d.className='oca-check-item';
+    d.innerHTML=`<input type="checkbox" value="${k}" checked id="oca_${k}"><label for="oca_${k}">${k}</label>`;
+    c.appendChild(d);
   });
 }
+function getOcasSeleccionadas() { return Array.from(document.querySelectorAll('#oca-checklist input:checked')).map(e=>e.value); }
+function toggleOcaPopover()     { document.getElementById('oca-popover').classList.toggle('open'); }
+document.addEventListener('click',e=>{ if(!document.getElementById('oca-dropdown').contains(e.target)) document.getElementById('oca-popover').classList.remove('open'); });
 
-function getOcasSeleccionadas() {
-  return Array.from(document.querySelectorAll('#oca-checklist input:checked')).map(el => el.value);
-}
-
-function toggleOcaPopover() {
-  document.getElementById('oca-popover').classList.toggle('open');
-}
-
-document.addEventListener('click', e => {
-  if (!document.getElementById('oca-dropdown').contains(e.target)) {
-    document.getElementById('oca-popover').classList.remove('open');
-  }
-});
-
-// ===================================================
-//  OCA SELECTS EN MODAL / TOOLBAR
-// ===================================================
 function buildOcaDropdowns() {
-  ['sim-oca'].forEach(id => {
-    let sel = document.getElementById(id);
-    Object.keys(CAPACIDADES).forEach(k => {
-      let opt = document.createElement('option');
-      opt.value = k; opt.textContent = k;
-      sel.appendChild(opt);
-    });
-  });
+  const sel=document.getElementById('sim-oca');
+  Object.keys(CAPACIDADES).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
 }
 
 function buildTablaIA() {
-  let tbody = document.getElementById('tabla-ia-body');
-  tbody.innerHTML = '';
-  Object.entries(CAPACIDADES).forEach(([oca, cap]) => {
-    let tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><select name="activo" style="width:60px;">
-        <option value="NO">NO</option><option value="SI">SI</option>
-      </select></td>
+  const tb=document.getElementById('tabla-ia-body'); tb.innerHTML='';
+  Object.entries(CAPACIDADES).forEach(([oca,cap])=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><select name="activo" style="width:60px;"><option value="NO">NO</option><option value="SI">SI</option></select></td>
       <td style="font-weight:700;color:var(--gold);">${oca}</td>
       <td style="font-family:var(--font-mono);">${cap}</td>
       <td><input type="number" name="vent" value="3" min="1" max="20" style="width:70px;"></td>
-      <td><input type="text" name="new_time" placeholder="16/04/2026 10:00" style="width:200px;"></td>
-    `;
-    tr.dataset.oca = oca;
-    tbody.appendChild(tr);
+      <td><input type="text" name="new_time" placeholder="16/04/2026 10:00" style="width:200px;"></td>`;
+    tr.dataset.oca=oca; tb.appendChild(tr);
   });
 }
 
-// ===================================================
-//  FECHA CONTROLS
-// ===================================================
+// ═══════════════════════════════════════════
+//  FECHAS GANTT
+// ═══════════════════════════════════════════
 function initFechas() {
-  let hoy = todayStr();
-  document.getElementById('fecha-inicio').value = hoy;
-  document.getElementById('fecha-fin').value = hoy;
+  const hoy=todayStr();
+  document.getElementById('fecha-inicio').value=hoy;
+  document.getElementById('fecha-fin').value=hoy;
   updateFechaIndicador();
-
-  document.getElementById('fecha-inicio').addEventListener('change', () => { updateFechaIndicador(); renderChart(); updateOtaDropdown(); });
-  document.getElementById('fecha-fin').addEventListener('change', () => { updateFechaIndicador(); renderChart(); updateOtaDropdown(); });
+  document.getElementById('fecha-inicio').addEventListener('change',()=>{updateFechaIndicador();renderChart();updateOtaDropdown();});
+  document.getElementById('fecha-fin').addEventListener('change',()=>{updateFechaIndicador();renderChart();updateOtaDropdown();});
 }
 
 function setDiaUnico() {
-  let start = document.getElementById('fecha-inicio').value;
-  document.getElementById('fecha-fin').value = start;
-  updateFechaIndicador();
-  renderChart();
+  document.getElementById('fecha-fin').value=document.getElementById('fecha-inicio').value;
+  updateFechaIndicador(); renderChart();
 }
 
 function updateFechaIndicador() {
-  let s = document.getElementById('fecha-inicio').value;
-  let e = document.getElementById('fecha-fin').value;
-  let el = document.getElementById('fecha-indicador');
-  if (s === e) {
-    el.innerHTML = `<span style="color:var(--green);font-weight:700;">✓ Un día específico</span>`;
-  } else {
-    el.innerHTML = `<span style="color:var(--blue-light);">📆 Rango: ${s} a ${e}</span>`;
-  }
+  const s=document.getElementById('fecha-inicio').value, e=document.getElementById('fecha-fin').value;
+  document.getElementById('fecha-indicador').innerHTML = s===e
+    ? `<span style="color:var(--green);font-weight:700;">✓ Un día específico</span>`
+    : `<span style="color:var(--blue-light);">📆 Rango: ${s} a ${e}</span>`;
 }
 
-// ===================================================
-//  OTA DROPDOWN
-// ===================================================
 function updateOtaDropdown() {
-  let sel = document.getElementById('sim-ota-id');
-  let start = new Date(document.getElementById('fecha-inicio').value);
-  let end = new Date(document.getElementById('fecha-fin').value);
-  end.setHours(23,59,59);
-  let ocas = getOcasSeleccionadas();
-
-  let otas = [...new Set(dfGlobal
-    .filter(r => r.FECHA_OP_DT && r.FECHA_OP_DT >= start && r.FECHA_OP_DT <= end && ocas.includes(r.OCA) && !['CECO','FX'].includes(r.OTA))
-    .map(r => r.OTA_ID))].sort();
-
-  sel.innerHTML = '<option value="">Ej: QT_1</option>';
-  otas.forEach(o => { let opt = document.createElement('option'); opt.value = o; opt.textContent = o; sel.appendChild(opt); });
+  const sel=document.getElementById('sim-ota-id');
+  const start=parseFechaInput(document.getElementById('fecha-inicio').value)||new Date(-8640000000000000);
+  const end=parseFechaInput(document.getElementById('fecha-fin').value)||new Date(8640000000000000);
+  if(end) end.setHours(23,59,59,999);
+  const ocas=getOcasSeleccionadas();
+  const otas=[...new Set(dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&ocas.includes(r.OCA)&&!['CECO','FX'].includes(r.OTA)).map(r=>r.OTA_ID))].sort();
+  sel.innerHTML='<option value="">Ej: QT_1</option>';
+  otas.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op); });
 }
 
-// ===================================================
+// ═══════════════════════════════════════════
 //  SIMULACIONES
-// ===================================================
+// ═══════════════════════════════════════════
 function aplicarSimulacion() {
-  let otaId = document.getElementById('sim-ota-id').value;
-  if (!otaId) return;
-
-  let vFecha = document.getElementById('sim-fecha').value;
-  let vHora = document.getElementById('sim-hora').value;
-  let vLineas = parseFloat(document.getElementById('sim-lineas').value) || 1;
-  let vTpdc = parseFloat(document.getElementById('sim-tpdc').value) || 16;
-  let vOca = document.getElementById('sim-oca').value;
-
-  if (!simulaciones[otaId]) simulaciones[otaId] = {};
-  if (vFecha && vHora) {
-    let hid = new Date(`${vFecha}T${vHora}:00`);
-    if (!isNaN(hid.getTime())) simulaciones[otaId].hid_dt_sim = hid;
-  }
-  simulaciones[otaId].lineas_r_sim = vLineas;
-  simulaciones[otaId].tpdc_sim = vTpdc;
-  if (vOca) simulaciones[otaId].oca_sim = vOca;
-
+  const otaId=document.getElementById('sim-ota-id').value; if(!otaId) return;
+  const vF=document.getElementById('sim-fecha').value, vH=document.getElementById('sim-hora').value;
+  const vL=parseFloat(document.getElementById('sim-lineas').value)||1;
+  const vT=parseFloat(document.getElementById('sim-tpdc').value)||16;
+  const vO=document.getElementById('sim-oca').value;
+  if(!simulaciones[otaId]) simulaciones[otaId]={};
+  if(vF&&vH){ const h=new Date(`${vF}T${vH}:00`); if(!isNaN(h)) simulaciones[otaId].hid_dt_sim=h; }
+  simulaciones[otaId].lineas_r_sim=vL; simulaciones[otaId].tpdc_sim=vT;
+  if(vO) simulaciones[otaId].oca_sim=vO;
   renderChart();
 }
 
-// ===================================================
-//  REFRESCAR
-// ===================================================
 async function refrescarDatos() {
-  simulaciones = {};
-  await cargarDatos();
-  updateOtaDropdown();
-  renderChart();
-  showToast();
+  simulaciones={};
+  await cargarDatos(); updateOtaDropdown(); renderChart();
+  showToast('✅ Datos actualizados desde Exporinter 🌎');
 }
 
-function showToast() {
-  let t = document.getElementById('toast');
-  t.style.display = 'block';
-  setTimeout(() => { t.style.display = 'none'; }, 4000);
-}
-
-// ===================================================
-//  MODAL IA
-// ===================================================
-function openModal() { document.getElementById('modal-ia').classList.add('open'); }
-function closeModal() { document.getElementById('modal-ia').classList.remove('open'); }
-
-function ejecutarIA() {
-  let rows = document.querySelectorAll('#tabla-ia-body tr');
-  let config = {};
-  rows.forEach(tr => {
-    let oca = tr.dataset.oca;
-    let activo = tr.querySelector('[name=activo]').value;
-    if (activo !== 'SI') return;
-    let vent = parseInt(tr.querySelector('[name=vent]').value) || 1;
-    let newTime = tr.querySelector('[name=new_time]').value.trim();
-    config[oca] = { vent, newTime };
-  });
-
-  let start = new Date(document.getElementById('fecha-inicio').value);
-  let end = new Date(document.getElementById('fecha-fin').value);
-  end.setHours(23,59,59);
-  let ocas = getOcasSeleccionadas();
-
-  let dff = dfGlobal.filter(r =>
-    r.FECHA_OP_DT && r.FECHA_OP_DT >= start && r.FECHA_OP_DT <= end &&
-    ocas.includes(r.OCA) && !['CECO','FX'].includes(r.OTA)
-  );
-
-  // Optimización IA simple
-  Object.entries(config).forEach(([oca, cfg]) => {
-    let vuelos = dff.filter(r => r.OCA === oca).sort((a,b) => {
-      let ea = a.ETD_REAL_DT ? a.ETD_REAL_DT.getTime() : Infinity;
-      let eb = b.ETD_REAL_DT ? b.ETD_REAL_DT.getTime() : Infinity;
-      return ea - eb;
-    });
-    if (!vuelos.length) return;
-
-    let horaActual;
-    if (cfg.newTime) {
-      // Parse DD/MM/AAAA HH:MM
-      let parts = cfg.newTime.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
-      if (parts) {
-        horaActual = new Date(+parts[3], +parts[2]-1, +parts[1], +parts[4], +parts[5]);
-      } else {
-        horaActual = new Date(start);
-        horaActual.setHours(5,0,0,0);
-      }
-    } else {
-      horaActual = new Date(start);
-      horaActual.setHours(5,0,0,0);
-    }
-
-    vuelos.forEach(v => {
-      if (!simulaciones[v.OTA_ID]) simulaciones[v.OTA_ID] = {};
-      simulaciones[v.OTA_ID].hid_dt_sim = new Date(horaActual);
-      simulaciones[v.OTA_ID].lineas_r_sim = cfg.vent;
-
-      let fbe = v.FBE;
-      let tpdc = v.TPDC;
-      let durSec = fbe > 0 && tpdc > 0 ? (fbe * tpdc) / cfg.vent : 3600;
-      horaActual = addSeconds(horaActual, durSec + 3600);
-    });
-  });
-
-  closeModal();
-  renderChart();
-}
-
-// ===================================================
-//  LOADING
-// ===================================================
 function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
 function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
 
-// ===================================================
-//  COLORES POR OTA
-// ===================================================
-const COLOR_BASE = {
-  'QT': [6, 35, 94],
-  'L7': [11, 59, 11],
-  'UPS': [43, 11, 59],
-  'GHT': [11, 92, 59],
-  'TR': [92, 11, 59],
-};
-const colorCache = {};
-const prefixCount = {};
-
-function getPrefijo(otaId) {
-  let s = String(otaId).toUpperCase();
-  if (s.startsWith('QT')) return 'QT';
-  if (s.startsWith('L7')) return 'L7';
-  if (s.startsWith('UPS')) return 'UPS';
-  if (s.startsWith('GHT')) return 'GHT';
-  if (s.startsWith('TR')) return 'TR';
-  return null;
+function forceChartResize() {
+  const chartEl = document.getElementById('grafico-maestro');
+  if (!chartEl || !chartEl.data) return;
+  if (chartResizeTimer) clearTimeout(chartResizeTimer);
+  chartResizeTimer = setTimeout(() => {
+    Plotly.Plots.resize(chartEl);
+  }, 80);
 }
 
-function getColor(otaId) {
-  if (colorCache[otaId]) return colorCache[otaId];
-  let p = getPrefijo(otaId);
-  if (p && COLOR_BASE[p]) {
-    let base = COLOR_BASE[p];
-    let n = prefixCount[p] || 0;
-    prefixCount[p] = n + 1;
-    let factors = [1.0, 0.75, 0.55, 0.4, 0.3];
-    let f = factors[Math.min(n, factors.length-1)];
-    let c = `rgb(${Math.round(base[0]*f)},${Math.round(base[1]*f)},${Math.round(base[2]*f)})`;
-    colorCache[otaId] = c;
-    return c;
-  }
-  colorCache[otaId] = '#1A1A2E';
-  return '#1A1A2E';
-}
-
-// ===================================================
-//  RENDER PRINCIPAL
-// ===================================================
-function renderChart() {
-  let start = new Date(document.getElementById('fecha-inicio').value);
-  let end = new Date(document.getElementById('fecha-fin').value);
-  end.setHours(23,59,59);
-  let ocasSel = getOcasSeleccionadas();
-
-  let dff = dfGlobal.filter(r =>
-    r.FECHA_OP_DT && r.FECHA_OP_DT >= start && r.FECHA_OP_DT <= end &&
-    !['CECO','FX'].includes(r.OTA)
-  ).map(r => ({...r})); // shallow clone
-
-  if (!dff.length) {
-    Plotly.newPlot('grafico-maestro', [], {
-      paper_bgcolor:'transparent', plot_bgcolor:'transparent',
-      annotations:[{text:'Sin datos para el rango seleccionado',xref:'paper',yref:'paper',x:0.5,y:0.5,showarrow:false,font:{size:18,color:'#8faac5'}}]
-    });
-    return;
-  }
-
-  // Aplicar simulaciones
-  dff.forEach(r => {
-    let sim = simulaciones[r.OTA_ID];
-    if (!sim) return;
-    if (sim.hid_dt_sim) r.HID_DT = sim.hid_dt_sim;
-    if (sim.lineas_r_sim) r.LINEAS_R = sim.lineas_r_sim;
-    if (sim.tpdc_sim) r.TPDC = sim.tpdc_sim;
-    if (sim.oca_sim) r.OCA = sim.oca_sim;
-  });
-
-  // Aplicar traslados
-  dff.forEach(r => {
-    if (r.CF_TRASLADO && CAPACIDADES[r.CF_TRASLADO] && r.FECHA_TRASLADO_DT && r.HORA_TRASLADO) {
-      let hidTras = parseHora(r.HORA_TRASLADO, r.FECHA_TRASLADO_DT);
-      if (hidTras) {
-        r.OCA_ORIGINAL = r.OCA;
-        r.OCA = r.CF_TRASLADO;
-        r.HID_DT_ORIGINAL = r.HID_DT;
-        r.HID_DT = hidTras;
-        r.TIENE_TRASLADO = true;
-      }
-    }
-  });
-
-  // Filtrar OCAs
-  dff = dff.filter(r => ocasSel.includes(r.OCA));
-  if (!dff.length) {
-    Plotly.newPlot('grafico-maestro', [], {
-      paper_bgcolor:'transparent', plot_bgcolor:'transparent',
-      annotations:[{text:'Sin datos para las OCAs seleccionadas',xref:'paper',yref:'paper',x:0.5,y:0.5,showarrow:false,font:{size:18,color:'#8faac5'}}]
-    });
-    return;
-  }
-
-  // Calcular HFD y límites
-  dff.forEach(r => {
-    r.LINEAS_R = r.LINEAS_R || 1;
-    r.TPDC = r.TPDC || 16;
-    let durSec = r.FBE > 0 && r.TPDC > 0 ? (r.FBE * r.TPDC) / r.LINEAS_R : 0;
-    r.HFD_REAL = r.HID_DT ? addSeconds(r.HID_DT, durSec) : null;
-    r.HFD_LIMITE = calcularLimiteHFD(r);
-    r.X_FIN = r.HFD_LIMITE || (r.HFD_REAL ? addSeconds(r.HFD_REAL, 1800) : null);
-    if (r.X_FIN && r.HID_DT && r.X_FIN < r.HID_DT) {
-      r.X_FIN = addSeconds(r.HID_DT, 1800);
-    }
-  });
-
-  // Ordenar y asignar carriles
-  dff.sort((a,b) => {
-    let oa = a.OCA, ob = b.OCA;
-    if (oa < ob) return -1;
-    if (oa > ob) return 1;
-    let ta = a.HID_DT ? a.HID_DT.getTime() : Infinity;
-    let tb = b.HID_DT ? b.HID_DT.getTime() : Infinity;
-    return ta - tb;
-  });
-
-  let yUnique = [];
-  let ocaOrden = [...new Set(dff.map(r => r.OCA))];
-
-  // Asignar NIVEL_OCA (carriles)
-  ocaOrden.forEach(oca => {
-    let rows = dff.filter(r => r.OCA === oca);
-    rows.sort((a,b) => (a.HID_DT?.getTime()||0) - (b.HID_DT?.getTime()||0));
-    let carrilFin = [];
-
-    rows.forEach(r => {
-      let asignado = false;
-      for (let i = 0; i < carrilFin.length; i++) {
-        if (!carrilFin[i] || !r.HID_DT || r.HID_DT >= carrilFin[i]) {
-          r.NIVEL_OCA = i;
-          carrilFin[i] = r.X_FIN;
-          asignado = true;
-          break;
-        }
-      }
-      if (!asignado) {
-        r.NIVEL_OCA = carrilFin.length;
-        carrilFin.push(r.X_FIN);
-      }
-    });
-  });
-
-  dff.forEach(r => { r.ID_FILA = `${r.OCA} | L${r.NIVEL_OCA||0}`; });
-
-  ocaOrden.forEach(oca => {
-    let filas = [...new Set(dff.filter(r => r.OCA === oca).map(r => r.ID_FILA))];
-    filas.sort((a,b) => parseInt(a.split('L')[1]) - parseInt(b.split('L')[1]));
-    yUnique.push(...filas);
-  });
-  yUnique = [...new Set(yUnique)];
-
-  // Fecha reserva
-  dff.forEach(r => {
+function scheduleChartRerender() {
+  if (!dfGlobal.length || chartIsRerendering) return;
+  if (chartRerenderTimer) clearTimeout(chartRerenderTimer);
+  chartRerenderTimer = setTimeout(() => {
+    chartIsRerendering = true;
     try {
-      let fd = parseDate(r.FECHA_RESERVA);
-      if (fd) {
-        let dia = fd.toLocaleDateString('en-US',{weekday:'short'});
-        r.FECHA_RES_LABEL = (DIAS_ES[dia]||dia) + ' ' + fd.getDate().toString().padStart(2,'0');
-      } else r.FECHA_RES_LABEL = '';
-    } catch(e) { r.FECHA_RES_LABEL = ''; }
-  });
-
-  // Limpiar ID_VUELO
-  dff.forEach(r => {
-    r._OTA_CLEAN = String(r.OTA_ID||'').replace('_','');
-    r._VUE_CLEAN = String(r.ID_VUELO||'').replace('_','');
-    let g = String(r.GRUPO||'').trim();
-    r._GRUPO = (!g || g === 'nan') ? '' : g + ' | ';
-    r._PALLETS = Math.round(r.PALLETS||0);
-    r._LINEAS = Math.round(r.LINEAS_R||1);
-  });
-
-  // Agrupar por OTA para Plotly
-  let otaIds = [...new Set(dff.map(r => r.OTA_ID))];
-
-  // Reset color cache for fresh assignment
-  Object.keys(colorCache).forEach(k => delete colorCache[k]);
-  Object.keys(prefixCount).forEach(k => delete prefixCount[k]);
-
-  let traces = [];
-
-  otaIds.forEach(otaId => {
-    let rows = dff.filter(r => r.OTA_ID === otaId);
-    let color = getColor(otaId);
-
-    let xs = [], xe = [], ys = [], texts = [], customdata = [];
-    rows.forEach(r => {
-      if (!r.HID_DT || !r.X_FIN) return;
-      xs.push(r.HID_DT.toISOString());
-      xe.push(r.X_FIN.toISOString());
-      ys.push(r.ID_FILA);
-      texts.push(`<b>${r._OTA_CLEAN} - ${r._VUE_CLEAN} - ${r.FECHA_RES_LABEL}</b><br>${r._GRUPO}${r._PALLETS} Plls | ${r._LINEAS} Vent`);
-      customdata.push([
-        r.OTA_ID,
-        r.HID_DT ? fmtHM(r.HID_DT) : 'N/A',
-        r.HFD_REAL ? fmtHM(r.HFD_REAL) : 'N/A',
-        r.X_FIN ? fmtHM(r.X_FIN) : 'N/A',
-        r.ETD_REAL_DT ? (fmtDate(r.ETD_REAL_DT) + ' ' + fmtHM(r.ETD_REAL_DT)) : 'N/A',
-        r.FH_ATD_DT ? (fmtDate(r.FH_ATD_DT) + ' ' + fmtHM(r.FH_ATD_DT)) : 'N/A',
-        r.FBE.toLocaleString('es-CO'),
-        r.TPDC,
-        r.HFD_REAL && r.HFD_LIMITE ? (r.HFD_REAL <= r.HFD_LIMITE ? '✅' : '❌') : '—',
-        r.TIENE_TRASLADO ? '🔄' : ''
-      ]);
-    });
-
-    if (!xs.length) return;
-
-    traces.push({
-      type: 'bar',
-      name: otaId,
-      x: xs.map((s,i) => {
-        let start = new Date(s), end = new Date(xe[i]);
-        return (end - start) / 1000;
-      }),
-      base: xs,
-      y: ys,
-      orientation: 'h',
-      marker: { color: color, line: { width: 1, color: 'rgba(0,0,0,0.3)' } },
-      text: texts,
-      textposition: 'inside',
-      insidetextanchor: 'middle',
-      textfont: { color: 'white', size: 12, family: 'Rajdhani, sans-serif' },
-      customdata: customdata,
-      hovertemplate:
-        '<b>✈️ %{customdata[0]}</b><br><br>' +
-        '📦 <b>FBE:</b> %{customdata[6]}<br>' +
-        '⏱️ <b>TPDC:</b> %{customdata[7]} seg<br><br>' +
-        '🕐 <b>HID:</b> %{customdata[1]}<br>' +
-        '🏁 <b>HFD:</b> %{customdata[2]}<br>' +
-        '🚪 <b>Salida CF:</b> %{customdata[3]}<br>' +
-        '✈️ <b>ETD:</b> %{customdata[4]}<br>' +
-        '🛬 <b>ATD:</b> %{customdata[5]}<br>' +
-        '%{customdata[8]} %{customdata[9]}' +
-        '<extra></extra>',
-      showlegend: false,
-    });
-  });
-
-  // Shapes (líneas divisorias entre OCAs)
-  let shapes = [];
-  let currentOca = null;
-  yUnique.forEach((y, i) => {
-    let oca = y.split(' | ')[0];
-    if (currentOca && oca !== currentOca) {
-      shapes.push({
-        type: 'line', x0: 0, x1: 1, xref: 'paper',
-        y0: i - 0.5, y1: i - 0.5, yref: 'y',
-        line: { color: 'rgba(240,180,41,0.6)', width: 2, dash: 'solid' }
-      });
+      renderChart();
+      requestAnimationFrame(forceChartResize);
+    } finally {
+      chartIsRerendering = false;
     }
-    currentOca = oca;
-  });
+  }, 180);
+}
 
-  // Líneas de medianoche
-  let allDates = new Set();
-  dff.forEach(r => {
-    if (r.HID_DT) { let d = new Date(r.HID_DT); d.setHours(0,0,0,0); allDates.add(d.toISOString()); }
-    if (r.X_FIN)  { let d = new Date(r.X_FIN);  d.setHours(0,0,0,0); allDates.add(d.toISOString()); }
-  });
-  allDates.forEach(ds => {
-    shapes.push({
-      type: 'line', x0: ds, x1: ds, xref: 'x',
-      y0: 0, y1: 1, yref: 'paper',
-      line: { color: 'rgba(150,180,255,0.5)', width: 2, dash: 'dash' }
+function setupChartAutoResize() {
+  const chartEl = document.getElementById('grafico-maestro');
+  const containerEl = document.getElementById('chart-container');
+  if (!chartEl || !containerEl) return;
+
+  window.addEventListener('resize', scheduleChartRerender);
+  window.addEventListener('orientationchange', scheduleChartRerender);
+
+  if ('ResizeObserver' in window) {
+    lastChartContainerWidth = Math.round(containerEl.getBoundingClientRect().width || 0);
+    chartResizeObserver = new ResizeObserver(entries => {
+      const w = Math.round(entries[0]?.contentRect?.width || 0);
+      if (!w) return;
+      if (Math.abs(w - lastChartContainerWidth) < 2) return;
+      lastChartContainerWidth = w;
+      scheduleChartRerender();
     });
+    chartResizeObserver.observe(containerEl);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  MODAL IA
+// ═══════════════════════════════════════════
+function openModal()  { document.getElementById('modal-ia').classList.add('open'); }
+function closeModal() { document.getElementById('modal-ia').classList.remove('open'); }
+
+function ejecutarIA() {
+  const rows=document.querySelectorAll('#tabla-ia-body tr'), cfg={};
+  rows.forEach(tr=>{
+    const oca=tr.dataset.oca, act=tr.querySelector('[name=activo]').value;
+    if(act!=='SI') return;
+    cfg[oca]={ vent:parseInt(tr.querySelector('[name=vent]').value)||1, newTime:tr.querySelector('[name=new_time]').value.trim() };
   });
-
-  // Layout
-  let chartH = Math.max(600, yUnique.length * 110);
-
-  let tickvals = yUnique;
-  let ticktext = yUnique.map(v => {
-    let oca = v.split(' | ')[0];
-    let cap = CAPACIDADES[oca] || '';
-    return `<b>${oca}</b><br><span style='font-size:10px'>Cap: ${cap}</span>`;
+  const start=parseFechaInput(document.getElementById('fecha-inicio').value)||new Date();
+  const end=parseFechaInput(document.getElementById('fecha-fin').value)||new Date(); end.setHours(23,59,59);
+  const ocas=getOcasSeleccionadas();
+  const dff=dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&ocas.includes(r.OCA)&&!['CECO','FX'].includes(r.OTA));
+  Object.entries(cfg).forEach(([oca,c])=>{
+    const vuelos=dff.filter(r=>r.OCA===oca).sort((a,b)=>(a.ETD_REAL_DT?.getTime()||Infinity)-(b.ETD_REAL_DT?.getTime()||Infinity));
+    if(!vuelos.length) return;
+    let hora;
+    if(c.newTime){ const p=c.newTime.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/); hora=p?new Date(+p[3],+p[2]-1,+p[1],+p[4],+p[5]):new Date(start); if(!p) hora.setHours(5,0,0,0); }
+    else { hora=new Date(start); hora.setHours(5,0,0,0); }
+    vuelos.forEach(v=>{ if(!simulaciones[v.OTA_ID]) simulaciones[v.OTA_ID]={}; simulaciones[v.OTA_ID].hid_dt_sim=new Date(hora); simulaciones[v.OTA_ID].lineas_r_sim=c.vent; hora=addSec(hora,(v.FBE>0&&v.TPDC>0?(v.FBE*v.TPDC)/c.vent:3600)+3600); });
   });
+  closeModal(); renderChart();
+}
 
-  // Anotaciones (HID/HFD info por barra)
-  let annotations = [];
-  dff.forEach(r => {
-    if (!r.HID_DT || !r.X_FIN) return;
-    let cumple = r.HFD_REAL && r.HFD_LIMITE ? r.HFD_REAL <= r.HFD_LIMITE : true;
-    let hfdH = r.HFD_REAL ? fmtHM(r.HFD_REAL) : 'N/A';
-    let hidH = r.HID_DT ? fmtHM(r.HID_DT) : 'N/A';
-    let etdInfo = '';
-    if (r.ETD_REAL_DT) etdInfo = `${r.FH_ATD_DT ? 'ATD' : 'ETD'}: ${fmtHM(r.ETD_REAL_DT)} ${cumple ? '✅' : '❌'}`;
-    let traText = r.TIENE_TRASLADO ? `🔄 <b>H:T: ${hidH}</b><br>` : '';
-    let txt = `${traText}<b>HID: ${hidH} | HFD: ${hfdH}</b><br>${etdInfo}`;
+// ═══════════════════════════════════════════
+//  COLORES GANTT
+// ═══════════════════════════════════════════
+const CB={QT:[6,35,94],L7:[11,59,11],UPS:[43,11,59],GHT:[11,92,59],TR:[92,11,59]};
+const CC={},PC={};
+function getPfx(id){ const s=String(id).toUpperCase(); for(const p of['QT','L7','UPS','GHT','TR']) if(s.startsWith(p)) return p; return null; }
+function getColor(id){
+  if(CC[id]) return CC[id];
+  const p=getPfx(id);
+  if(p&&CB[p]){ const b=CB[p],n=PC[p]||0; PC[p]=n+1; const f=[1,.75,.55,.4,.3][Math.min(n,4)]; CC[id]=`rgb(${Math.round(b[0]*f)},${Math.round(b[1]*f)},${Math.round(b[2]*f)})`; return CC[id]; }
+  CC[id]='#1A1A2E'; return CC[id];
+}
 
-    let durMin = (r.X_FIN - r.HID_DT) / 60000;
-    let xPos = new Date(r.HID_DT.getTime() + (r.X_FIN - r.HID_DT) * 0.5);
+// ═══════════════════════════════════════════
+//  RENDER GANTT
+// ═══════════════════════════════════════════
+function tPalHr(r){ if(!r.FBE||!r.TPDC||!r.LINEAS_R||!r.PALLETS) return 0; const h=(r.FBE*r.TPDC)/6000/r.LINEAS_R; return h>0?r.PALLETS/h:0; }
+function ocupacion(row,dff){
+  const {OCA:oca,DIA_OP:dia,X_FIN:tX}=row, cap=CAPACIDADES[oca]||1;
+  if(!tX) return{porc:0,libres:cap};
+  let ocu=0;
+  dff.forEach(o=>{
+    if(o.OCA!==oca||o.DIA_OP!==dia) return;
+    if(o===row){ocu+=o.PALLETS||0;return;}
+    if(!o.HID_DT||!o.X_FIN||o.X_FIN<=tX||o.HID_DT>tX) return;
+    if(o.HFD_REAL&&tX>=o.HFD_REAL) ocu+=o.PALLETS||0;
+    else ocu+=Math.min(((o.PALLETS_POR_HORA||0)*(tX-o.HID_DT)/3600000),o.PALLETS||0);
+  });
+  ocu=Math.min(ocu,cap);
+  return{porc:Math.round(ocu/cap*100),libres:Math.max(0,Math.floor(cap-ocu))};
+}
+function cLibres(n){ return n<=10?'#e74c3c':n<=30?'#f0b429':'#27ae60'; }
 
-    annotations.push({
-      x: xPos.toISOString(),
-      y: r.ID_FILA,
-      text: txt,
-      showarrow: false,
-      yshift: -38,
-      xanchor: 'center',
-      font: { size: 11, color: cumple ? '#222' : '#c0392b' },
-      bgcolor: 'rgba(255,255,255,0.92)',
-      bordercolor: 'rgba(0,0,0,0.15)',
-      borderwidth: 1
+function renderChart(){
+  let start=parseFechaInput(document.getElementById('fecha-inicio').value)||new Date(-8640000000000000);
+  let end  =parseFechaInput(document.getElementById('fecha-fin').value)  ||new Date(8640000000000000);
+  if(end) end.setHours(23,59,59,999);
+  const ocasSel=getOcasSeleccionadas();
+
+  let dff=dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&!['CECO','FX'].includes(r.OTA)).map(r=>({...r}));
+  if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para el rango seleccionado',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
+
+  dff.forEach(r=>{ const sim=simulaciones[r.OTA_ID]; if(!sim) return; if(sim.hid_dt_sim) r.HID_DT=sim.hid_dt_sim; if(sim.lineas_r_sim) r.LINEAS_R=sim.lineas_r_sim; if(sim.tpdc_sim) r.TPDC=sim.tpdc_sim; if(sim.oca_sim) r.OCA=sim.oca_sim; });
+  dff.forEach(r=>{ if(r.CF_TRASLADO&&CAPACIDADES[r.CF_TRASLADO]&&r.FECHA_TRASLADO_DT&&r.HORA_TRASLADO){ const hT=parseHora(r.HORA_TRASLADO,r.FECHA_TRASLADO_DT); if(hT){r.OCA_ORIGINAL=r.OCA;r.OCA=r.CF_TRASLADO;r.HID_DT_ORIGINAL=r.HID_DT;r.HID_DT=hT;r.TIENE_TRASLADO=true;}} });
+  dff=dff.filter(r=>ocasSel.includes(r.OCA));
+  if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para las OCAs seleccionadas',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
+
+  dff.forEach(r=>{
+    r.LINEAS_R=r.LINEAS_R||1; r.TPDC=r.TPDC||16;
+    const ds=r.FBE>0&&r.TPDC>0?(r.FBE*r.TPDC)/r.LINEAS_R:0;
+    r.HFD_REAL=r.HID_DT?addSec(r.HID_DT,ds):null;
+    r.HFD_LIMITE=calcularLimiteHFD(r);
+    r.X_FIN=r.HFD_LIMITE||(r.HFD_REAL?addSec(r.HFD_REAL,1800):null);
+    if(r.X_FIN&&r.HID_DT&&r.X_FIN<r.HID_DT) r.X_FIN=addSec(r.HID_DT,1800);
+    r.DIA_OP=dayKey(r.FECHA_OP_DT); r.PALLETS_POR_HORA=tPalHr(r);
+  });
+  dff.forEach(r=>{ const o=ocupacion(r,dff); r.PORC_OCUP=o.porc; r.LIBRES=o.libres; });
+
+  dff.sort((a,b)=>{ if(a.OCA<b.OCA) return -1; if(a.OCA>b.OCA) return 1; return(a.HID_DT?.getTime()||0)-(b.HID_DT?.getTime()||0); });
+  const ocaOrden=[...new Set(dff.map(r=>r.OCA))];
+  ocaOrden.forEach(oca=>{
+    const rows=dff.filter(r=>r.OCA===oca).sort((a,b)=>(a.HID_DT?.getTime()||0)-(b.HID_DT?.getTime()||0));
+    const cf=[];
+    rows.forEach(r=>{ let ok=false; for(let i=0;i<cf.length;i++){if(!cf[i]||!r.HID_DT||r.HID_DT>=cf[i]){r.NIVEL_OCA=i;cf[i]=r.X_FIN;ok=true;break;}} if(!ok){r.NIVEL_OCA=cf.length;cf.push(r.X_FIN);} });
+  });
+  dff.forEach(r=>{r.ID_FILA=`${r.OCA} | L${r.NIVEL_OCA||0}`;});
+
+  let yUnique=[];
+  ocaOrden.forEach(oca=>{ const f=[...new Set(dff.filter(r=>r.OCA===oca).map(r=>r.ID_FILA))]; f.sort((a,b)=>parseInt(a.split('L')[1])-parseInt(b.split('L')[1])); yUnique.push(...f); });
+  yUnique=[...new Set(yUnique)];
+
+  dff.forEach(r=>{ const g=String(r.GRUPO||'').trim(); r._G=(!g||g==='nan')?'':g+' | '; r._P=Math.round(r.PALLETS||0); r._L=Math.round(r.LINEAS_R||1); });
+
+  Object.keys(CC).forEach(k=>delete CC[k]); Object.keys(PC).forEach(k=>delete PC[k]);
+  const otaIds=[...new Set(dff.map(r=>r.OTA_ID))];
+  const traces=[];
+
+  otaIds.forEach(id=>{
+    const rows=dff.filter(r=>r.OTA_ID===id), color=getColor(id);
+    const xs=[],xe=[],ys=[],texts=[],cd=[];
+    rows.forEach(r=>{
+      if(!r.HID_DT||!r.X_FIN) return;
+      xs.push(r.HID_DT); xe.push(r.X_FIN); ys.push(r.ID_FILA);
+      texts.push(`<b>${String(r.OTA_ID||'').replace('_','')} - ${String(r.ID_VUELO||'').replace('_','')} - ${r.FECHA_RES_LABEL}</b><br>${r._G}${r._P} Plls | ${r._L} Vent`);
+      cd.push([r.OTA_ID,r.MATRICULA||'—',fmtHM(r.HID_DT),fmtHM(r.HFD_REAL),fmtHM(r.X_FIN),
+        r.ETD_REAL_DT?fmtDMHM(r.ETD_REAL_DT):'N/A',r.FH_ATD_DT?fmtDMHM(r.FH_ATD_DT):'N/A',
+        r.FBE.toLocaleString('es-CO'),r.TPDC,r.TIENE_TRASLADO?'Sí':'No',`${r.PORC_OCUP||0}%`,String(r.LIBRES??0)]);
     });
+    if(!xs.length) return;
+    traces.push({type:'bar',name:id,x:xs.map((s,i)=>xe[i]-s),base:xs,y:ys,orientation:'h',width:.82,
+      marker:{color,line:{width:1,color:'rgba(0,0,0,.3)'}},
+      text:texts,textposition:'inside',insidetextanchor:'middle',
+      textfont:{color:'white',size:12,family:'Rajdhani, sans-serif'},
+      customdata:cd,
+      hovertemplate:'<b>✈️ %{customdata[0]}</b><br>🔢 MAT: %{customdata[1]}<br>📦 FBE: %{customdata[7]} | ⏱️ %{customdata[8]}s<br>🕐 HID: %{customdata[2]} | 🏁 HFD: %{customdata[3]}<br>🚪 Salida CF: %{customdata[4]}<br>✈️ ETD: %{customdata[5]}<br>🛬 ATD: %{customdata[6]}<br>🔄 Traslado: %{customdata[9]}<extra></extra>',
+      showlegend:false});
   });
 
-  let layout = {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: '#0d1f38',
-    height: chartH,
-    margin: { l: 10, r: 150, t: 50, b: 50 },
-    xaxis: {
-      type: 'date',
-      tickformat: '%H:%M<br>%a %d %b',
-      side: 'top',
-      gridcolor: 'rgba(255,255,255,0.07)',
-      color: '#8faac5',
-      linecolor: 'rgba(255,255,255,0.2)',
-      showline: true,
-    },
-    yaxis: {
-      categoryorder: 'array',
-      categoryarray: [...yUnique].reverse(),
-      title: '',
-      showgrid: false,
-      tickfont: { size: 11, color: '#8faac5' },
-      tickvals,
-      ticktext,
-      automargin: true,
-    },
-    shapes,
-    annotations,
-    showlegend: false,
-    hovermode: 'closest',
-    font: { family: 'Rajdhani, sans-serif', color: '#e8f0fe' },
-  };
+  const chartH=Math.max(600,yUnique.length*110);
+  const barGap=yUnique.length<=3?.46:yUnique.length<=6?.30:.16;
 
-  let config = { responsive: true, displayModeBar: true, displaylogo: false,
-    modeBarButtonsToRemove: ['select2d','lasso2d'] };
+  const shapes=[];
+  // HFD lines
+  dff.forEach(r=>{ if(!r.HFD_REAL||!r.ID_FILA) return; const h=Math.max(18,Math.min(70,Math.round((chartH/Math.max(1,yUnique.length))*.34)));
+    shapes.push({type:'line',x0:r.HFD_REAL,x1:r.HFD_REAL,xref:'x',y0:-h,y1:h,ysizemode:'pixel',yanchor:r.ID_FILA,yref:'y',layer:'above',line:{color:'rgba(255,77,77,.7)',width:5}}); });
+  // OCA dividers
+  const catArr=[...yUnique].reverse();
+  for(let i=1;i<catArr.length;i++){ if(catArr[i-1].split(' | ')[0]!==catArr[i].split(' | ')[0]) shapes.push({type:'line',x0:0,x1:1,xref:'paper',y0:i/catArr.length,y1:i/catArr.length,yref:'paper',line:{color:'rgba(240,180,41,.75)',width:2}}); }
+  // Midnight
+  const mn=new Set(); dff.forEach(r=>{ [r.HID_DT,r.X_FIN].forEach(dt=>{ if(dt){const d=new Date(dt);d.setHours(0,0,0,0);mn.add(d.getTime());} }); });
+  mn.forEach(ms=>shapes.push({type:'line',x0:new Date(ms),x1:new Date(ms),xref:'x',y0:0,y1:1,yref:'paper',layer:'below',line:{color:'rgba(150,180,255,.45)',width:2,dash:'dash'}}));
 
-  Plotly.newPlot('grafico-maestro', traces, layout, config);
+  const annotations=[];
+  dff.forEach(r=>{
+    if(!r.HID_DT||!r.X_FIN) return;
+    const cumple=r.HFD_REAL&&r.HFD_LIMITE?r.HFD_REAL<=r.HFD_LIMITE:true;
+    const hfdH=r.HFD_REAL?`${fmtDate(r.HFD_REAL)} ${fmtHM(r.HFD_REAL)}`:'N/A';
+    const hidH=r.HID_DT?`${fmtDate(r.HID_DT)} ${fmtHM(r.HID_DT)}`:'N/A';
+    let etd=''; if(r.ETD_REAL_DT){const ref=r.FH_ATD_DT||r.ETD_REAL_DT; etd=`${r.FH_ATD_DT?'ATD':'ETD'}: ${fmtDate(ref)} ${fmtHM(ref)} ${cumple?'✅':'❌'}`;}
+    const tra=r.TIENE_TRASLADO?`🔄 <b>H:T: ${hidH}</b><br>`:'';
+    const xPos=new Date(r.HID_DT.getTime()+(r.X_FIN-r.HID_DT)*.5);
+    annotations.push({x:xPos,y:r.ID_FILA,text:`${tra}<b>HID: ${hidH} | HFD: ${hfdH}</b><br>${etd}`,showarrow:false,yshift:-38,xanchor:'center',font:{size:11,color:cumple?'#222':'#c0392b'},bgcolor:'rgba(255,255,255,.92)',bordercolor:'rgba(0,0,0,.15)',borderwidth:1});
+    annotations.push({x:r.X_FIN,y:r.ID_FILA,text:`<b>${r.PORC_OCUP||0}%</b><br><span style="font-size:10px;">LIB: ${r.LIBRES??0}</span>`,showarrow:false,xanchor:'left',xshift:13,yanchor:'middle',font:{size:12,color:cLibres(r.LIBRES??0)},bgcolor:'rgba(10,22,40,.88)',bordercolor:cLibres(r.LIBRES??0),borderwidth:2,borderpad:6,opacity:.95});
+  });
 
-  // Actualizar panel
+  const xMins=dff.filter(r=>r.HID_DT).map(r=>r.HID_DT.getTime());
+  const xMaxs=dff.filter(r=>r.X_FIN).map(r=>r.X_FIN.getTime());
+  const xMin=xMins.length?Math.min(...xMins):start.getTime();
+  const xMax=xMaxs.length?Math.max(...xMaxs):end.getTime();
+  const xPad=10*60*1000;
+
+  Plotly.newPlot('grafico-maestro',traces,{
+    paper_bgcolor:'transparent',plot_bgcolor:'#0d1f38',height:chartH,barmode:'overlay',bargap:barGap,margin:{l:10,r:20,t:50,b:50},
+    xaxis:{type:'date',autorange:false,range:[new Date(xMin-xPad),new Date(xMax+xPad)],tickformat:'%H:%M<br>%a %d %b',side:'top',gridcolor:'rgba(255,255,255,.07)',color:'#8faac5',linecolor:'rgba(255,255,255,.2)',showline:true},
+    yaxis:{categoryorder:'array',categoryarray:[...yUnique].reverse(),title:'',showgrid:false,tickfont:{size:11,color:'#8faac5'},tickvals:yUnique,ticktext:yUnique.map(v=>{const o=v.split(' | ')[0];return`<b>${o}</b><br><span style='font-size:10px'>Cap: ${CAPACIDADES[o]||''}</span>`;}),automargin:true},
+    shapes,annotations,showlegend:false,hovermode:'closest',font:{family:'Rajdhani, sans-serif',color:'#e8f0fe'},
+  },{responsive:true,displayModeBar:true,displaylogo:false,modeBarButtonsToRemove:['select2d','lasso2d']});
+
+  // Forzar ajuste tras el render para evitar desalineación al redimensionar
+  requestAnimationFrame(forceChartResize);
+
   updatePanel(dff);
 }
 
-// ===================================================
-//  PANEL SUPERIOR
-// ===================================================
-function updatePanel(dff) {
-  document.getElementById('stat-fbe').textContent = Math.round(dff.reduce((s,r)=>s+r.FBE,0)).toLocaleString('es-CO');
-  document.getElementById('stat-pallets').textContent = Math.round(dff.reduce((s,r)=>s+r.PALLETS,0));
-
-  let uniqueVuelos = (ota) => new Set(dff.filter(r=>String(r.OTA||'').includes(ota)).map(r=>r.ID_VUELO)).size;
-  document.getElementById('stat-qt').textContent = uniqueVuelos('QT');
-  document.getElementById('stat-tcb').textContent = uniqueVuelos('TCB');
-  document.getElementById('stat-ups').textContent = uniqueVuelos('UPS');
-  document.getElementById('stat-l7').textContent = uniqueVuelos('L7');
-  document.getElementById('stat-traslados').textContent = dff.filter(r=>r.TIENE_TRASLADO).length;
+function updatePanel(dff){
+  document.getElementById('stat-fbe').textContent=Math.round(dff.reduce((s,r)=>s+r.FBE,0)).toLocaleString('es-CO');
+  document.getElementById('stat-pallets').textContent=Math.round(dff.reduce((s,r)=>s+r.PALLETS,0));
+  const uv=ota=>new Set(dff.filter(r=>String(r.OTA||'').includes(ota)).map(r=>r.ID_VUELO)).size;
+  document.getElementById('stat-qt').textContent=uv('QT');
+  document.getElementById('stat-tcb').textContent=uv('TCB');
+  document.getElementById('stat-ups').textContent=uv('UPS');
+  document.getElementById('stat-l7').textContent=uv('L7');
+  document.getElementById('stat-traslados').textContent=dff.filter(r=>r.TIENE_TRASLADO).length;
 }
 
-// ===================================================
-//  INIT
-// ===================================================
-async function init() {
-  buildOcaChecklist();
-  buildOcaDropdowns();
-  buildTablaIA();
-  initFechas();
+// ═══════════════════════════════════════════
+//  PLAN DE VUELOS — ETD vs ATD
+//  Filtra por FECHA_RESERVA, muestra TODAS las estaciones
+// ═══════════════════════════════════════════
+function abrirPlanVuelos(){
+  document.getElementById('modal-plan-vuelos').classList.add('open');
+  const now=new Date();
+  const ayer=new Date(now); ayer.setDate(now.getDate()-1);
+  const manana=new Date(now); manana.setDate(now.getDate()+1);
+  const toInputDate=(d)=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  document.getElementById('pv-fecha-inicio').value=toInputDate(ayer);
+  document.getElementById('pv-fecha-fin').value=toInputDate(manana);
+  cargarPlanVuelos();
+}
+function cerrarPlanVuelos(){
+  if (intervaloMapa) {
+    clearInterval(intervaloMapa);
+    intervaloMapa = null;
+  }
+  document.getElementById('modal-plan-vuelos').classList.remove('open');
+}
 
-  // Event listeners para re-render
-  document.querySelectorAll('#oca-checklist').forEach(el => {
-    el.addEventListener('change', () => { updateOtaDropdown(); renderChart(); });
-  });
-  document.getElementById('oca-checklist').addEventListener('change', () => {
-    updateOtaDropdown(); renderChart();
+function cargarPlanVuelos(){
+  const startReserva=parseFechaInput(document.getElementById('pv-fecha-inicio').value);
+  const endReserva  =parseFechaInput(document.getElementById('pv-fecha-fin').value);
+  const estacionSel=document.getElementById('pv-estacion').value;
+  
+  if(!startReserva||!endReserva){ showToast('Selecciona un rango de fechas válido','#e74c3c'); return; }
+  endReserva.setHours(23,59,59,999);
+
+  // ========== PASO 1: FILTRAR VUELOS POR FECHA_RESERVA ==========
+  let vuelos = dfGlobal.filter(r => {
+    if(!r.FECHA_RESERVA_DT) return false;
+    const fechaReserva = r.FECHA_RESERVA_DT;
+    if(fechaReserva < startReserva || fechaReserva > endReserva) return false;
+    if(['CECO','FX'].includes(r.OTA)) return false;
+    if(!r.ID_VUELO || r.ID_VUELO.trim() === '') return false;
+    if(estacionSel && r.ORIGEN !== estacionSel) return false;
+    
+    // ========== EXCLUIR VUELOS QUE EMPIECEN CON "DOLQ" ==========
+    const idVuelo = (r.ID_VUELO || '').toUpperCase();
+    if(idVuelo.startsWith('DOLQ')) return false;
+    
+    return true;
   });
 
-  try {
-    await cargarDatos();
-    updateOtaDropdown();
-    renderChart();
-  } catch(e) {
-    hideLoading();
-    console.error('Error cargando datos:', e);
-    document.getElementById('grafico-maestro').innerHTML =
-      `<div style="color:var(--red);padding:40px;font-size:18px;">
-        ❌ Error al cargar los datos. Verifica la URL de Google Sheets o los permisos de acceso.<br>
-        <small style="color:var(--text-dim)">${e.message||e}</small>
-      </div>`;
+  console.log('📅 RANGO RESERVA:', startReserva.toLocaleDateString(), 'a', endReserva.toLocaleDateString());
+  console.log('✈️ Vuelos DENTRO del rango:', vuelos.length);
+
+  // Limpiar tabla ANTES de empezar
+  const tbody = document.getElementById('tabla-dias-body');
+  const thead = document.getElementById('tabla-dias-header');
+  
+  if(!vuelos.length){
+    vuelosPlanVisibles = [];
+    tbody.innerHTML = `<tr><td colspan="20" style="text-align:center;padding:30px;color:var(--text-dim);">
+      No hay vuelos con FECHA_RESERVA entre ${startReserva.toLocaleDateString()} y ${endReserva.toLocaleDateString()}.
+    </td></tr>`;
+    ['pv-total','pv-atd','pv-etd','pv-tarde'].forEach(id=>document.getElementById(id).textContent='0');
+    
+    // Actualizar mapa aunque no haya vuelos
+    if (document.getElementById('modal-plan-vuelos').classList.contains('open')) {
+        actualizarMapaAviones();
+    }
+    return;
+  }
+
+  // ========== PASO 2: GENERAR COLUMNAS CON TODAS LAS FECHAS DONDE HAY ETD/ATD ==========
+  const todasLasFechas = new Set();
+  vuelos.forEach(v => {
+    if(v.FH_ATD_DT) todasLasFechas.add(dayKey(v.FH_ATD_DT));
+    if(v.ETD_REAL_DT) todasLasFechas.add(dayKey(v.ETD_REAL_DT));
+  });
+  
+  // Convertir a array y ordenar cronológicamente
+  let dias = Array.from(todasLasFechas).sort().map(f => {
+    const [y,m,d] = f.split('-');
+    return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  });
+  
+  console.log('📅 Columnas de fechas (ETD/ATD):', dias.map(d=>d.toLocaleDateString()));
+
+  // CABECERA DINÁMICA con las fechas de ETD/ATD
+  thead.innerHTML = `<tr>
+    <th class="th-fija" style="position:sticky;left:0;background:#0f2040;">F. Reserva</th>
+    <th class="th-fija">Estación</th>
+    <th class="th-fija">Vuelo</th>
+    <th class="th-fija">Matrícula/OTA</th>
+    <th class="th-fija" style="text-align:right;">FBE</th>
+    ${dias.map(d=>{
+      const dEn=d.toLocaleDateString('en-US',{weekday:'short'});
+      return`<th style="text-align:center;min-width:80px;">${DIAS_ES[dEn]||dEn}<br>${p2(d.getDate())}/${p2(d.getMonth()+1)}</th>`;
+    }).join('')}
+  </tr>`;
+
+  // ORDENAR vuelos: por fecha reserva, luego estación
+  const ORDEN_EST={BOG:1,MDE:2,UIO:3};
+  vuelos.sort((a,b)=>{
+    const fd=a.FECHA_RESERVA_DT-b.FECHA_RESERVA_DT; if(fd!==0) return fd;
+    const oa=ORDEN_EST[a.ORIGEN]||99, ob=ORDEN_EST[b.ORIGEN]||99; if(oa!==ob) return oa-ob;
+    return 0;
+  });
+
+  // Guardar dataset visible para búsquedas de mapa (prioridad matrícula)
+  vuelosPlanVisibles = [...vuelos];
+
+  // Estadísticas
+  let totATD=0,totETD=0,totTarde=0;
+  vuelos.forEach(v=>{
+    if(v.FH_ATD_DT){ 
+      totATD++; 
+      if(v.ETD_REAL_DT && v.FH_ATD_DT > v.ETD_REAL_DT) totTarde++; 
+    } else if(v.ETD_REAL_DT){
+      totETD++;
+    }
+  });
+  document.getElementById('pv-total').textContent=vuelos.length;
+  document.getElementById('pv-atd').textContent=totATD;
+  document.getElementById('pv-etd').textContent=totETD;
+  document.getElementById('pv-tarde').textContent=totTarde;
+
+  // LIMPIAR y LLENAR el cuerpo de la tabla
+  tbody.innerHTML = '';
+  const ahora = new Date();
+
+  vuelos.forEach(v => {
+    const tr = document.createElement('tr');
+    const fechaLabel = v.FECHA_RES_LABEL || `${p2(v.FECHA_RESERVA_DT.getDate())}/${p2(v.FECHA_RESERVA_DT.getMonth()+1)}`;
+    const cFecha = `<td style="vertical-align:middle;text-align:center;font-weight:700;color:var(--gold);white-space:nowrap;">${fechaLabel}<br><span style="font-size:10px;color:#8faac5;">${v.FECHA_RESERVA_DT.getFullYear()}</span><\/td>`;
+
+    // Badge de estación
+    const estBadgeCls = v.ORIGEN === 'BOG' ? 'est-bog' : (v.ORIGEN === 'MDE' ? 'est-mde' : (v.ORIGEN === 'UIO' ? 'est-uio' : 'est-otro'));
+    
+    // ========== CONCATENAR MATRICULA y OTA_ID ==========
+    const matricula = (v.MATRICULA && v.MATRICULA !== '—' && v.MATRICULA !== 'nan') ? v.MATRICULA : '';
+    const otaId = (v.OTA_ID && v.OTA_ID !== '') ? v.OTA_ID : '';
+    let matDisplay = '';
+    if(matricula && otaId) {
+      matDisplay = `${matricula} / ${otaId}`;
+    } else if(matricula) {
+      matDisplay = matricula;
+    } else if(otaId) {
+      matDisplay = otaId;
+    } else {
+      matDisplay = '—';
+    }
+
+    // Celdas por cada fecha de ETD/ATD
+    const celdasDias = dias.map(d => {
+      const dKey = dayKey(d);
+      
+      const atdDate = v.FH_ATD_DT;
+      const etdDate = v.ETD_REAL_DT;
+      
+      const atdEnDia = atdDate && dayKey(atdDate) === dKey;
+      const etdEnDia = etdDate && dayKey(etdDate) === dKey;
+      
+      if(!atdEnDia && !etdEnDia) {
+        return `<td class="c-vacia" style="text-align:center;">—<\/td>`;
+      }
+      
+      // Mostrar ATD si existe en este día
+      if(atdEnDia) {
+        const horaATD = fmtHM(atdDate);
+        let icon = '🛫';
+        let cls = 'c-atd';
+        
+        if(etdDate) {
+          const diffMs = atdDate - etdDate;
+          const diffMin = Math.round(diffMs / 60000);
+          if(diffMin > 5) { 
+            cls = 'c-atd-late'; 
+            icon = '🔴'; 
+          } else if(diffMin < -5) { 
+            icon = '✅'; 
+          } else { 
+            icon = '✅'; 
+          }
+        }
+        
+        return `<td class="${cls}" style="text-align:center;white-space:nowrap;">${icon} ${horaATD}<\/td>`;
+      }
+      
+      // Mostrar ETD
+      if(etdEnDia) {
+        const horaETD = fmtHM(etdDate);
+        const esPasado = etdDate < ahora;
+        const cls = esPasado ? 'c-etd-late' : 'c-etd-ok';
+        const icon = esPasado ? '⚠️' : '🕐';
+        return `<td class="${cls}" style="text-align:center;white-space:nowrap;">${icon} ${horaETD}<\/td>`;
+      }
+      
+      return `<td class="c-vacia" style="text-align:center;">—<\/td>`;
+    });
+
+    tr.innerHTML = `
+      ${cFecha}
+      <td style="text-align:center;"><span class="est-badge ${estBadgeCls}">${v.ORIGEN}</span><\/td>
+      <td style="font-weight:700;">${v.ID_VUELO}<\/td>
+      <td style="font-size:11px;">${matDisplay}<\/td>
+      <td style="text-align:right;">${Math.round(v.FBE).toLocaleString('es-CO')}<\/td>
+      ${celdasDias.join('')}
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  // ========== ACTUALIZAR MAPA DESPUÉS DE LLENAR LA TABLA ==========
+  if (document.getElementById('modal-plan-vuelos').classList.contains('open')) {
+    actualizarMapaAviones();
   }
 }
 
-window.addEventListener('DOMContentLoaded', init);
+// Normalizar callsign: eliminar guiones, espacios y convertir a mayúsculas
+function normalizarCallsign(id) {
+    if (!id) return null;
+    let limpio = String(id).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (limpio.length < 3) return null;
+    return limpio;
+}
+// ═══════════════════════════════════════════
+//  MAPA EN TIEMPO REAL — ADS-B
+// ═══════════════════════════════════════════
+let mapaPlanVuelos       = null;
+let markersAviones       = [];
+let intervaloMapa        = null;
+let ultimaActualizacionMapa = 0;
+let vuelosPlanVisibles   = [];
+const adsbUrlCache       = new Map();
+const BBOX = { lamin:-5, lomin:-82, lamax:13, lomax:-60 };
+
+const sleep = (ms)=>new Promise(r=>setTimeout(r, ms));
+
+// ── 2. FETCH A ADSB.FI ───────────────────────────────────────────────
+async function fetchAdsbFi() {
+  const TARGET_BBOX = `https://opendata.adsb.fi/api/v2/boundingbox?lamax=${BBOX.lamax}&lamin=${BBOX.lamin}&lomax=${BBOX.lomax}&lomin=${BBOX.lomin}`;
+  const TARGET_LOL  = `https://api.adsb.lol/v2/lat/4.6/lon/-74.1/dist/600`;
+
+  // ✅ CAMBIAR corsproxy.io POR allorigins
+  const intentos = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_BBOX)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_LOL)}`,
+  ];
+
+  for (const url of intentos) {
+    try {
+      console.log('📡 Probando:', url.slice(0,70)+'...');
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      const ac = data.ac || data.aircraft || [];
+      
+      if (ac.length > 0) {
+        console.log(`✅ OK — ${ac.length} vuelos`);
+        return ac;
+      }
+    } catch(e) {
+      console.warn('   ❌', e.message);
+    }
+  }
+  return [];
+}
+async function fetchAcFromUrls(urls) {
+  for (const url of urls) {
+    try {
+      const cached = adsbUrlCache.get(url);
+      if (cached && (Date.now() - cached.ts) < 60000) {
+        if (cached.ac.length) return cached.ac;
+        continue;
+      }
+
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 10000);
+      const res  = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!res.ok) {
+        adsbUrlCache.set(url, { ts: Date.now(), ac: [] });
+        continue;
+      }
+      const txt = await res.text();
+      if (!txt || txt.trim().startsWith('<')) {
+        adsbUrlCache.set(url, { ts: Date.now(), ac: [] });
+        continue;
+      }
+      const data = JSON.parse(txt);
+      const ac = data.ac || data.aircraft || [];
+      adsbUrlCache.set(url, { ts: Date.now(), ac });
+      if (ac.length) return ac;
+    } catch(_) {
+      // Intentar siguiente URL
+    }
+  }
+  return [];
+}
+
+async function fetchAdsbByIds(matriculas) {
+  const encontrados = [];
+  const vistos = new Set();
+
+  const agregar = (arr)=>{
+    arr.forEach(ac=>{
+      const k = String(ac.hex || `${ac.r || ''}-${ac.flight || ''}`).toUpperCase();
+      if (!k || vistos.has(k)) return;
+      vistos.add(k);
+      encontrados.push(ac);
+    });
+  };
+
+  // SOLO buscar por matrícula
+  for (const mat of matriculas.slice(0, 15)) { // Aumentado a 15 pero con mejor espaciado
+    if (!mat || mat.length < 4) continue;
+    const id = encodeURIComponent(mat);
+    const ac = await fetchAcFromUrls([
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.adsb.lol/v2/registration/${id}`)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://opendata.adsb.fi/api/v2/registration/${id}`)}`,
+    ]);
+    if (ac.length) agregar(ac);
+    await sleep(800); // Pausa más larga para evitar 429
+  }
+
+  return encontrados;
+}
+
+// ── 3. FILTRAR COINCIDENCIAS ─────────────────────────────────────────
+function filtrarCoincidencias(todos, ids) {
+  if (!ids.length) return todos.filter(ac => ac.lat != null && ac.lon != null);
+
+  const norm = ids.map(id => String(id).toUpperCase().replace(/[^A-Z0-9]/g,'')).filter(id=>id.length>=4);
+
+  return todos.filter(ac => {
+    const cs  = (ac.flight||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const hex = (ac.hex   ||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const reg = (ac.r     ||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    return norm.some(id => {
+      return [cs, reg, hex].some(v => v && (v === id || v.includes(id) || id.includes(v)));
+    });
+  }).filter(ac => ac.lat != null && ac.lon != null);
+}
+
+// ── 4. CONVERTIR FORMATO ─────────────────────────────────────────────
+function mapAc(ac) {
+  return {
+    icao24  : (ac.hex   ||'').toUpperCase(),
+    callsign: (ac.flight||ac.hex||'').toUpperCase().trim(),
+    reg     : (ac.r     ||'').toUpperCase(),
+    lat     : ac.lat, lon: ac.lon,
+    alt     : ac.alt_baro === 'ground' ? 0 : (parseFloat(ac.alt_baro)||0),
+    tierra  : ac.alt_baro === 'ground' || (ac.gs!=null && ac.gs < 30),
+    vel     : ac.gs    || 0,
+    heading : ac.track || 0,
+  };
+}
+
+function fallbackPosByOrigen(origen) {
+  const o = String(origen || '').toUpperCase();
+  if (o === 'MDE') return { lat: 6.1645, lon: -75.4231 };
+  if (o === 'UIO') return { lat: -0.1292, lon: -78.3575 };
+  return { lat: 4.7016, lon: -74.1469 }; // BOG por defecto
+}
+
+function simpleHash(str) {
+  let h = 0;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+  return Math.abs(h);
+}
+
+function generarFallbackDesdeFiltro() {
+  const src = (vuelosPlanVisibles || []).filter(v => v && (v.MATRICULA || v.OTA_ID));
+  if (!src.length) return [];
+  return src.slice(0, 30).map(v => {
+    const base = fallbackPosByOrigen(v.ORIGEN);
+    const key = `${v.MATRICULA || ''}-${v.OTA_ID || ''}-${v.ID_VUELO || ''}`;
+    const h = simpleHash(key);
+    const dLat = ((h % 100) / 1000) - 0.05;
+    const dLon = (((Math.floor(h / 100) % 100) / 1000) - 0.05);
+    return {
+      icao24: (v.OTA_ID || key || 'SIM').toUpperCase(),
+      callsign: (v.OTA_ID || v.ID_VUELO || 'SIM').toUpperCase(),
+      reg: (v.MATRICULA || 'N/A').toUpperCase(),
+      lat: base.lat + dLat,
+      lon: base.lon + dLon,
+      alt: 0,
+      tierra: true,
+      vel: 0,
+      heading: 0,
+    };
+  });
+}
+
+// ── 5. PINTAR MARCADORES ─────────────────────────────────────────────
+function pintarMarcadores(vuelos) {
+  markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
+  markersAviones = [];
+
+  if (!vuelos.length) {
+    showToast('⚠️ Sin vuelos ADS-B en la región ahora mismo','#e74c3c');
+    return;
+  }
+
+  const bounds = [];
+  vuelos.forEach(v => {
+    const icon = L.divIcon({
+      html:`<div style="transform:rotate(${v.heading}deg);font-size:22px;line-height:1;filter:drop-shadow(0 0 4px rgba(240,180,41,.8));">${v.tierra?'🛬':'✈️'}</div>`,
+      iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16], className:''
+    });
+    const popup = `
+      <div style="font-family:monospace;font-size:13px;min-width:180px;">
+        <b>✈️ ${v.callsign||v.icao24}</b><br>
+        <span style="color:#888;">Matrícula:</span> ${v.reg||'—'}<br>
+        <span style="color:#888;">ICAO24:</span> ${v.icao24}<br>
+        <span style="color:#888;">Estado:</span> ${v.tierra?'🅿️ En tierra':'🔵 En vuelo'}<br>
+        <span style="color:#888;">Altitud:</span> ${Math.round(v.alt)||'—'} ft<br>
+        <span style="color:#888;">Velocidad:</span> ${Math.round(v.vel)} kt<br>
+        <span style="color:#888;">Rumbo:</span> ${Math.round(v.heading)}°
+      </div>`;
+    const m = L.marker([v.lat,v.lon],{icon}).bindPopup(popup).addTo(mapaPlanVuelos);
+    markersAviones.push(m);
+    bounds.push([v.lat,v.lon]);
+  });
+
+  if (bounds.length) mapaPlanVuelos.fitBounds(bounds,{padding:[40,40],maxZoom:8});
+  console.log(`✅ Mapa: ${vuelos.length} avión(es) pintados`);
+}
+
+// ── 6. ACTUALIZAR MAPA (función principal) ───────────────────────────
+async function actualizarMapaAviones(force = false) {
+  if (!mapaPlanVuelos) return;
+
+  const ahora = Date.now();
+  if (!force && (ahora - ultimaActualizacionMapa < 20000)) return;
+  ultimaActualizacionMapa = ahora;
+
+  const ids = getIdsDelDia();
+
+  // Solo búsqueda por matrícula
+  let encontrados = await fetchAdsbByIds(ids.matriculas);
+  console.log(`🎯 Búsqueda por matrícula: ${encontrados.length} coincidencias`);
+
+  if (!encontrados.length) {
+      const fallback = generarFallbackDesdeFiltro();
+      if (fallback.length) {
+          console.warn('⚠️ No se encontraron vuelos ADS-B. Mostrando posiciones desde la tabla.');
+          pintarMarcadores(fallback);
+          showToast('⚠️ Mostrando posiciones desde el plan de vuelos','#f0b429');
+          return;
+      }
+      showToast('⚠️ No hay vuelos activos para tus matrículas','#e74c3c');
+      return;
+  }
+
+  pintarMarcadores(encontrados.map(mapAc));
+}
+
+// ── 7. INICIALIZAR MAPA ──────────────────────────────────────────────
+function inicializarMapaPlanVuelos() {
+  const container = document.getElementById('mapa-container-plan');
+  if (!container) return;
+
+  container.innerHTML = '<div id="mapa-leaflet-plan" style="width:100%;height:100%;border-radius:8px;"></div>';
+
+  if (mapaPlanVuelos) { mapaPlanVuelos.remove(); mapaPlanVuelos = null; }
+
+  mapaPlanVuelos = L.map('mapa-leaflet-plan').setView([4.6,-74.1],5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OSM &copy; CartoDB', subdomains:'abcd', maxZoom:18
+  }).addTo(mapaPlanVuelos);
+
+  // Forzar carga inicial al presionar "Cargar Mapa"
+  ultimaActualizacionMapa = 0;
+  actualizarMapaAviones(true);
+
+  if (intervaloMapa) clearInterval(intervaloMapa);
+  intervaloMapa = setInterval(()=>{
+    if (document.getElementById('modal-plan-vuelos')?.classList.contains('open'))
+      actualizarMapaAviones();
+  }, 30000);
+}
+
+// ── 8. CERRAR ────────────────────────────────────────────────────────
+function cerrarPlanVuelos() {
+  if (intervaloMapa) { clearInterval(intervaloMapa); intervaloMapa = null; }
+  document.getElementById('modal-plan-vuelos').classList.remove('open');
+}
+
+function mostrarMensajeMapa(msg) {
+  const c = document.getElementById('mapa-container-plan');
+  if (!c) return;
+  c.innerHTML=`<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;"><span style="font-size:48px;">🗺️</span><p style="margin-top:10px;color:#8faac5;">${msg}</p></div>`;
+}
+
+async function debugAdsb() {
+  const todos = await fetchAdsbFi();
+  const ids   = getIdsDelDia();
+  const directos = await fetchAdsbByIds(ids.matriculas, ids.otaIds);
+  
+  console.log('════ IDs QUE BUSCO ════');
+  console.log('MATRÍCULAS:', ids.matriculas);
+  console.log('OTA_ID plan B:', ids.otaIds);
+  console.log('COINCIDENCIAS DIRECTAS IDs:', directos.length);
+  
+  console.log('════ LO QUE DEVUELVE ADSB (primeros 30) ════');
+  console.table(todos.slice(0,30).map(ac=>({
+    flight : (ac.flight||'').trim(),
+    hex    : ac.hex,
+    reg    : ac.r,
+    lat    : ac.lat,
+    lon    : ac.lon
+  })));
+
+  // Buscar si alguna matrícula de mis vuelos aparece en cualquier campo
+  const matriculas = ids.matriculas;
+  console.log('════ BÚSQUEDA MANUAL ════');
+  matriculas.forEach(mat => {
+    const encontrado = todos.find(ac =>
+      (ac.flight||'').toUpperCase().includes(mat) ||
+      (ac.hex   ||'').toUpperCase().includes(mat) ||
+      (ac.r     ||'').toUpperCase().includes(mat)
+    );
+    console.log(`${mat} → ${encontrado ? `✅ ENCONTRADO: flight=${(encontrado.flight||'').trim()} reg=${encontrado.r||''}` : '❌ NO encontrado'}`);
+  });
+}
+function getIdsDelDia() {
+  const matsUnicas = new Set();
+
+  (vuelosPlanVisibles || []).forEach(v => {
+    const mat = String(v.MATRICULA || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (mat && mat !== 'NAN' && mat !== '—' && mat.length >= 4) {
+      matsUnicas.add(mat);
+    }
+  });
+
+  console.log(`🛩️ Matrículas del filtro (${matsUnicas.size}):`, [...matsUnicas]);
+
+  return {
+    matriculas: [...matsUnicas].slice(0, 15),
+    otaIds: [] // Vacío, no usamos OTA_ID
+  };
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+async function init(){
+  buildOcaChecklist(); buildOcaDropdowns(); buildTablaIA(); initFechas();
+  setupChartAutoResize();
+  document.getElementById('oca-checklist').addEventListener('change',()=>{ updateOtaDropdown(); renderChart(); });
+  try{
+    await cargarDatos(); updateOtaDropdown(); renderChart();
+  }catch(e){
+    hideLoading();
+    document.getElementById('grafico-maestro').innerHTML=`<div style="color:var(--red);padding:40px;font-size:18px;">❌ Error al cargar los datos.<br><small style="color:var(--text-dim)">${e.message||e}</small></div>`;
+  }
+}
+window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
