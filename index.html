@@ -1024,7 +1024,7 @@ function renderChart(){
 
   const shapes=[];
   // HFD lines
-  dff.forEach(r=>{ if(!r.HFD_REAL||!r.ID_FILA) return; const h=Math.max(18,Math.min(70,Math.round((chartH/Math.max(1,yUnique.length))*.34)));
+  filasPorFiltro.forEach(r=>{ if(!r || !r.HFD_REAL || !r.ID_FILA) return; const h=Math.max(18,Math.min(70,Math.round((chartH/Math.max(1,yUnique.length))*.34)));
     shapes.push({type:'line',x0:r.HFD_REAL,x1:r.HFD_REAL,xref:'x',y0:-h,y1:h,ysizemode:'pixel',yanchor:r.ID_FILA,yref:'y',layer:'above',line:{color:'rgba(255,77,77,.7)',width:5}}); });
   // OCA dividers
   const catArr=[...yUnique].reverse();
@@ -1034,8 +1034,8 @@ function renderChart(){
   mn.forEach(ms=>shapes.push({type:'line',x0:new Date(ms),x1:new Date(ms),xref:'x',y0:0,y1:1,yref:'paper',layer:'below',line:{color:'rgba(150,180,255,.45)',width:2,dash:'dash'}}));
 
   const annotations=[];
-  dff.forEach(r=>{
-    if(!r.HID_DT||!r.X_FIN) return;
+  filasPorFiltro.forEach(r=>{
+    if(!r || !r.HID_DT || !r.X_FIN) return;
     const cumple=r.HFD_REAL&&r.HFD_LIMITE?r.HFD_REAL<=r.HFD_LIMITE:true;
     const hfdH=r.HFD_REAL?`${fmtDate(r.HFD_REAL)} ${fmtHM(r.HFD_REAL)}`:'N/A';
     const hidH=r.HID_DT?`${fmtDate(r.HID_DT)} ${fmtHM(r.HID_DT)}`:'N/A';
