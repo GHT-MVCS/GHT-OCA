@@ -40,6 +40,12 @@
   #main-content { margin-top:56px; }
 
   /* HEADER */
+  #sticky-filters {
+    position: sticky;
+    top: 56px;
+    z-index: 950;
+    background: var(--navy);
+  }
   #header-bar { background:var(--bar-bg); border-bottom:1px solid var(--border); padding:10px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   #header-bar h2 { font-size:26px; font-weight:700; letter-spacing:.06em; color:var(--gold); white-space:nowrap; }
   .divider-v { color:rgba(255,255,255,.3); font-size:24px; }
@@ -351,7 +357,7 @@
   padding: 14px 18px;
 }
 
-  @media(max-width:768px){ #panel-totales{flex-wrap:wrap;gap:8px;} #header-bar,#toolbar{flex-direction:column;align-items:flex-start;} }
+  @media(max-width:768px){ #panel-totales{flex-wrap:wrap;gap:8px;} #header-bar,#toolbar{flex-direction:column;align-items:flex-start;} #sticky-filters{top:56px;} }
 
 </style>
 </head>
@@ -384,41 +390,43 @@
 </div>
 
 <div id="main-content">
-  <div id="header-bar">
-    <h2>✈️ PLAN OCA</h2>
-    <span class="divider-v">|</span>
-    <div class="filter-group">
-      <span class="filter-label">🔍 Cuarto frío:</span>
-      <div id="oca-dropdown">
-        <button class="btn btn-gold btn-sm" onclick="toggleOcaPopover()">Seleccionar OCA ▾</button>
-        <div id="oca-popover"><div id="oca-checklist"></div></div>
+  <div id="sticky-filters">
+    <div id="header-bar">
+      <h2>✈️ PLAN OCA</h2>
+      <span class="divider-v">|</span>
+      <div class="filter-group">
+        <span class="filter-label">🔍 Cuarto frío:</span>
+        <div id="oca-dropdown">
+          <button class="btn btn-gold btn-sm" onclick="toggleOcaPopover()">Seleccionar OCA ▾</button>
+          <div id="oca-popover"><div id="oca-checklist"></div></div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">📅 Fecha O:</span>
+        <input type="date" id="fecha-inicio"/>
+        <span style="color:var(--text-dim)">→</span>
+        <input type="date" id="fecha-fin"/>
+        <button class="btn btn-green btn-sm" onclick="setDiaUnico()">📅 Día único</button>
+        <span id="fecha-indicador"></span>
       </div>
     </div>
-    <div class="filter-group">
-      <span class="filter-label">📅 Fecha O:</span>
-      <input type="date" id="fecha-inicio"/>
-      <span style="color:var(--text-dim)">→</span>
-      <input type="date" id="fecha-fin"/>
-      <button class="btn btn-green btn-sm" onclick="setDiaUnico()">📅 Día único</button>
-      <span id="fecha-indicador"></span>
-    </div>
-  </div>
 
-  <div id="toolbar">
-    <span class="toolbar-label">🛠️</span>
-    <span class="filter-label">1. # vuelo:</span>
-    <select id="sim-ota-id" style="width:150px;"><option value="">Ej: QT_1</option></select>
-    <span class="filter-label">2. Nueva HID:</span>
-    <input type="date" id="sim-fecha" style="width:140px;"/>
-    <input type="text" id="sim-hora" placeholder="HH:MM" style="width:72px;"/>
-    <span class="filter-label">3. Ventanillas:</span>
-    <input type="number" id="sim-lineas" value="1" min="1" max="20" style="width:60px;"/>
-    <span class="filter-label">4. Mover a (OCA):</span>
-    <select id="sim-oca" style="width:160px;"><option value="">Seleccionar...</option></select>
-    <span class="filter-label">TPDC (seg):</span>
-    <input type="number" id="sim-tpdc" value="16" min="1" style="width:70px;"/>
-    <button class="btn btn-green" onclick="aplicarSimulacion()">⚙️ AJUSTAR</button>
-    <button class="btn btn-purple" onclick="openModal()">🤖 OPTIMIZACIÓN IA</button>
+    <div id="toolbar">
+      <span class="toolbar-label">🛠️</span>
+      <span class="filter-label">1. # vuelo:</span>
+      <select id="sim-ota-id" style="width:150px;"><option value="">Ej: QT_1</option></select>
+      <span class="filter-label">2. Nueva HID:</span>
+      <input type="date" id="sim-fecha" style="width:140px;"/>
+      <input type="text" id="sim-hora" placeholder="HH:MM" style="width:72px;"/>
+      <span class="filter-label">3. Ventanillas:</span>
+      <input type="number" id="sim-lineas" value="1" min="1" max="20" style="width:60px;"/>
+      <span class="filter-label">4. Mover a (OCA):</span>
+      <select id="sim-oca" style="width:160px;"><option value="">Seleccionar...</option></select>
+      <span class="filter-label">TPDC (seg):</span>
+      <input type="number" id="sim-tpdc" value="16" min="1" style="width:70px;"/>
+      <button class="btn btn-green" onclick="aplicarSimulacion()">⚙️ </button>
+      <button class="btn btn-purple" onclick="openModal()">🤖IA</button>
+    </div>
   </div>
 
   <div id="chart-container">
@@ -701,6 +709,20 @@ function procesarDF(rows) {
   });
 }
 
+function formatFechaReservaCorta(fechaReserva) {
+  if (!fechaReserva) return '';
+  const dia = fechaReserva.toLocaleDateString('es-CO', { weekday: 'short' });
+  const diaLimpio = dia.charAt(0).toUpperCase() + dia.slice(1).replace('.', '');
+  return `${diaLimpio}/${p2(fechaReserva.getDate())}`;
+}
+
+function buildFiltroConsolidado(row) {
+  const vuelo = String(row.ID_VUELO || '').trim();
+  const fecha = formatFechaReservaCorta(row.FECHA_RESERVA_DT);
+  const grupo = String(row.GRUPO || '').trim();
+  return [vuelo, fecha, grupo].filter(Boolean).join(' | ');
+}
+
 function calcularLimiteHFD(row) {
   if (!row.ETD_REAL_DT) return null;
   const ota = String(row.OTA||'').toUpperCase().replace(/[-_]/g,' ');
@@ -787,24 +809,29 @@ function updateOtaDropdown() {
   const end=parseFechaInput(document.getElementById('fecha-fin').value)||new Date(8640000000000000);
   if(end) end.setHours(23,59,59,999);
   const ocas=getOcasSeleccionadas();
-  const otas=[...new Set(dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&ocas.includes(r.OCA)&&!['CECO','FX'].includes(r.OTA)).map(r=>r.OTA_ID))].sort();
-  sel.innerHTML='<option value="">Ej: QT_1</option>';
-  otas.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op); });
+  const filtros=[...new Set(
+    dfGlobal
+      .filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&ocas.includes(r.OCA)&&!['CECO','FX'].includes(r.OTA))
+      .map(r=>buildFiltroConsolidado(r))
+      .filter(Boolean)
+  )].sort();
+  sel.innerHTML='<option value="">Seleccionar vuelo / fecha / grupo</option>';
+  filtros.forEach(filtro=>{ const op=document.createElement('option'); op.value=filtro; op.textContent=filtro; sel.appendChild(op); });
 }
 
 // ═══════════════════════════════════════════
 //  SIMULACIONES
 // ═══════════════════════════════════════════
 function aplicarSimulacion() {
-  const otaId=document.getElementById('sim-ota-id').value; if(!otaId) return;
+  const filtro=document.getElementById('sim-ota-id').value; if(!filtro) return;
   const vF=document.getElementById('sim-fecha').value, vH=document.getElementById('sim-hora').value;
   const vL=parseFloat(document.getElementById('sim-lineas').value)||1;
   const vT=parseFloat(document.getElementById('sim-tpdc').value)||16;
   const vO=document.getElementById('sim-oca').value;
-  if(!simulaciones[otaId]) simulaciones[otaId]={};
-  if(vF&&vH){ const h=new Date(`${vF}T${vH}:00`); if(!isNaN(h)) simulaciones[otaId].hid_dt_sim=h; }
-  simulaciones[otaId].lineas_r_sim=vL; simulaciones[otaId].tpdc_sim=vT;
-  if(vO) simulaciones[otaId].oca_sim=vO;
+  if(!simulaciones[filtro]) simulaciones[filtro]={};
+  if(vF&&vH){ const h=new Date(`${vF}T${vH}:00`); if(!isNaN(h)) simulaciones[filtro].hid_dt_sim=h; }
+  simulaciones[filtro].lineas_r_sim=vL; simulaciones[filtro].tpdc_sim=vT;
+  if(vO) simulaciones[filtro].oca_sim=vO;
   renderChart();
 }
 
@@ -931,7 +958,7 @@ function renderChart(){
   let dff=dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&!['CECO','FX'].includes(r.OTA)).map(r=>({...r}));
   if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para el rango seleccionado',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
 
-  dff.forEach(r=>{ const sim=simulaciones[r.OTA_ID]; if(!sim) return; if(sim.hid_dt_sim) r.HID_DT=sim.hid_dt_sim; if(sim.lineas_r_sim) r.LINEAS_R=sim.lineas_r_sim; if(sim.tpdc_sim) r.TPDC=sim.tpdc_sim; if(sim.oca_sim) r.OCA=sim.oca_sim; });
+  dff.forEach(r=>{ const sim=simulaciones[buildFiltroConsolidado(r)]; if(!sim) return; if(sim.hid_dt_sim) r.HID_DT=sim.hid_dt_sim; if(sim.lineas_r_sim) r.LINEAS_R=sim.lineas_r_sim; if(sim.tpdc_sim) r.TPDC=sim.tpdc_sim; if(sim.oca_sim) r.OCA=sim.oca_sim; });
   dff.forEach(r=>{ if(r.CF_TRASLADO&&CAPACIDADES[r.CF_TRASLADO]&&r.FECHA_TRASLADO_DT&&r.HORA_TRASLADO){ const hT=parseHora(r.HORA_TRASLADO,r.FECHA_TRASLADO_DT); if(hT){r.OCA_ORIGINAL=r.OCA;r.OCA=r.CF_TRASLADO;r.HID_DT_ORIGINAL=r.HID_DT;r.HID_DT=hT;r.TIENE_TRASLADO=true;}} });
   dff=dff.filter(r=>ocasSel.includes(r.OCA));
   if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para las OCAs seleccionadas',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
@@ -963,17 +990,17 @@ function renderChart(){
   dff.forEach(r=>{ const g=String(r.GRUPO||'').trim(); r._G=(!g||g==='nan')?'':g+' | '; r._P=Math.round(r.PALLETS||0); r._L=Math.round(r.LINEAS_R||1); });
 
   Object.keys(CC).forEach(k=>delete CC[k]); Object.keys(PC).forEach(k=>delete PC[k]);
-  const otaIds=[...new Set(dff.map(r=>r.OTA_ID))];
+  const otaIds=[...new Set(dff.map(r=>buildFiltroConsolidado(r)))];
   const traces=[];
 
   otaIds.forEach(id=>{
-    const rows=dff.filter(r=>r.OTA_ID===id), color=getColor(id);
+    const rows=dff.filter(r=>buildFiltroConsolidado(r)===id), color=getColor(id);
     const xs=[],xe=[],ys=[],texts=[],cd=[];
     rows.forEach(r=>{
       if(!r.HID_DT||!r.X_FIN) return;
       xs.push(r.HID_DT); xe.push(r.X_FIN); ys.push(r.ID_FILA);
-      texts.push(`<b>${String(r.OTA_ID||'').replace('_','')} - ${String(r.ID_VUELO||'').replace('_','')} - ${r.FECHA_RES_LABEL}</b><br>${r._G}${r._P} Plls | ${r._L} Vent`);
-      cd.push([r.OTA_ID,r.MATRICULA||'—',fmtHM(r.HID_DT),fmtHM(r.HFD_REAL),fmtHM(r.X_FIN),
+      texts.push(`<b>${String(r.ID_VUELO||'').replace('_','')} - ${formatFechaReservaCorta(r.FECHA_RESERVA_DT)} - ${String(r.GRUPO||'').trim()}</b><br>${r._G}${r._P} Plls | ${r._L} Vent`);
+      cd.push([buildFiltroConsolidado(r),r.MATRICULA||'—',fmtHM(r.HID_DT),fmtHM(r.HFD_REAL),fmtHM(r.X_FIN),
         r.ETD_REAL_DT?fmtDMHM(r.ETD_REAL_DT):'N/A',r.FH_ATD_DT?fmtDMHM(r.FH_ATD_DT):'N/A',
         r.FBE.toLocaleString('es-CO'),r.VEHICULOS,r.TIENE_TRASLADO?'Sí':'No',`${r.PORC_OCUP||0}%`,String(r.LIBRES??0)]);
     });
@@ -1021,10 +1048,10 @@ function renderChart(){
   const xPad=10*60*1000;
 
   Plotly.newPlot('grafico-maestro',traces,{
-    paper_bgcolor:'transparent',plot_bgcolor:'#0d1f38',height:chartH,barmode:'overlay',bargap:barGap,margin:{l:10,r:20,t:50,b:50},
-    xaxis:{type:'date',autorange:false,range:[new Date(xMin-xPad),new Date(xMax+xPad)],tickformat:'%H:%M<br>%a %d %b',side:'top',gridcolor:'rgba(255,255,255,.07)',color:'#8faac5',linecolor:'rgba(255,255,255,.2)',showline:true},
-    yaxis:{categoryorder:'array',categoryarray:[...yUnique].reverse(),title:'',showgrid:false,tickfont:{size:11,color:'#8faac5'},tickvals:yUnique,ticktext:yUnique.map(v=>{const o=v.split(' | ')[0];return`<b>${o}</b><br><span style='font-size:10px'>Cap: ${CAPACIDADES[o]||''}</span>`;}),automargin:true},
-    shapes,annotations,showlegend:false,hovermode:'closest',font:{family:'Rajdhani, sans-serif',color:'#e8f0fe'},
+    paper_bgcolor:'#f4f6f8',plot_bgcolor:'#eef2f5',height:chartH,barmode:'overlay',bargap:barGap,margin:{l:10,r:20,t:50,b:50},
+    xaxis:{type:'date',autorange:false,range:[new Date(xMin-xPad),new Date(xMax+xPad)],tickformat:'%H:%M<br>%a %d %b',side:'top',gridcolor:'rgba(255,255,255,.07)',color:'#111111',tickfont:{color:'#111111'},linecolor:'rgba(255,255,255,.2)',showline:true},
+    yaxis:{categoryorder:'array',categoryarray:[...yUnique].reverse(),title:'',showgrid:false,tickfont:{size:11,color:'#111111'},tickvals:yUnique,ticktext:yUnique.map(v=>{const o=v.split(' | ')[0];return`<b>${o}</b><br><span style='font-size:10px'>Cap: ${CAPACIDADES[o]||''}</span>`;}),automargin:true},
+    shapes,annotations,showlegend:false,hovermode:'closest',font:{family:'Rajdhani, sans-serif',color:'#111111'},
   },{responsive:true,displayModeBar:true,displaylogo:false,modeBarButtonsToRemove:['select2d','lasso2d']});
 
   // Forzar ajuste tras el render para evitar desalineación al redimensionar
