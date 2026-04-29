@@ -375,10 +375,10 @@
   <div class="panel-item">
     <span>✈️ VUELOS:</span>
     <div class="vuelos-detail">
-      <span class="vuelo-badge" style="background:#1a3a5c;color:#87CEEB;">QT: <span id="stat-qt">0</span></span>
-      <span class="vuelo-badge" style="background:#1a3a1a;color:#98FB98;">TCB: <span id="stat-tcb">0</span></span>
-      <span class="vuelo-badge" style="background:#2d1a3a;color:#DDA0DD;">UPS: <span id="stat-ups">0</span></span>
-      <span class="vuelo-badge" style="background:#3a2a1a;color:#FFA07A;">L7: <span id="stat-l7">0</span></span>
+      <span class="vuelo-badge" style="background:#143d73;color:#b9d7ff;">QT: <span id="stat-qt">0</span></span>
+      <span class="vuelo-badge" style="background:#ffffff;color:#F52780;">TCB: <span id="stat-tcb">0</span></span>
+      <span class="vuelo-badge" style="background:#4a256e;color:#e2c2ff;">UPS: <span id="stat-ups">0</span></span>
+      <span class="vuelo-badge" style="background:#1f5c2c;color:#bff0c8;">L7: <span id="stat-l7">0</span></span>
     </div>
   </div>
   <div class="panel-divider"></div>
@@ -928,14 +928,33 @@ function ejecutarIA() {
 // ═══════════════════════════════════════════
 //  COLORES GANTT
 // ═══════════════════════════════════════════
-const CB={QT:[6,35,94],L7:[11,59,11],UPS:[43,11,59],GHT:[11,92,59],TR:[92,11,59]};
+const CB={QT:[37,99,235],L7:[34,197,94],UPS:[168,85,247],GHT:[20,184,166],TR:[251,146,60]};
 const CC={},PC={};
-function getPfx(id){ const s=String(id).toUpperCase(); for(const p of['QT','L7','UPS','GHT','TR']) if(s.startsWith(p)) return p; return null; }
-function getColor(id){
-  if(CC[id]) return CC[id];
-  const p=getPfx(id);
-  if(p&&CB[p]){ const b=CB[p],n=PC[p]||0; PC[p]=n+1; const f=[1,.75,.55,.4,.3][Math.min(n,4)]; CC[id]=`rgb(${Math.round(b[0]*f)},${Math.round(b[1]*f)},${Math.round(b[2]*f)})`; return CC[id]; }
-  CC[id]='#1A1A2E'; return CC[id];
+function getPfx(id){ const s=String(id||'').toUpperCase(); for(const p of['QT','L7','UPS','GHT','TR']) if(s.startsWith(p)) return p; return null; }
+function getRowFamily(row){
+  const ref = [row?.ID_VUELO, row?.OTA, row?.OTA_ID].filter(Boolean).join(' ').toUpperCase();
+  return getPfx(ref);
+}
+function hashColor(seed){
+  const s=String(seed||'');
+  let h=0;
+  for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i);
+  const hue=Math.abs(h)%360;
+  return `hsl(${hue} 52% 38%)`;
+}
+function getColor(row, seed){
+  const cacheKey = String(row?.ROW_UID ?? seed ?? '');
+  if(CC[cacheKey]) return CC[cacheKey];
+  const family = getRowFamily(row);
+  if(family && CB[family]){
+    const b=CB[family], n=PC[family]||0;
+    PC[family]=n+1;
+    const f=[1,.82,.66,.5,.36][Math.min(n,4)];
+    CC[cacheKey]=`rgb(${Math.round(b[0]*f)},${Math.round(b[1]*f)},${Math.round(b[2]*f)})`;
+    return CC[cacheKey];
+  }
+  CC[cacheKey]=hashColor(seed ?? cacheKey);
+  return CC[cacheKey];
 }
 
 // ═══════════════════════════════════════════
@@ -1008,7 +1027,7 @@ function renderChart(){
   const traces=[];
 
   otaIds.forEach(id=>{
-    const rows=[filasPorFiltro.get(id)].filter(Boolean), color=getColor(id);
+    const rows=[filasPorFiltro.get(id)].filter(Boolean), color=getColor(rows[0], id);
     const xs=[],xe=[],ys=[],texts=[],cd=[];
     rows.forEach(r=>{
       if(!r.HID_DT||!r.X_FIN) return;
