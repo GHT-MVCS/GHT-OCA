@@ -652,7 +652,7 @@ function showToast(msg, color='#27ae60') {
 function nk(k) { return k.trim().toUpperCase().replace(/\s+/g,'_'); }
 
 function procesarDF(rows) {
-  return rows.map(row => {
+  return rows.map((row, idx) => {
     const r = {};
     for (const k in row) r[nk(k)] = row[k];
 
@@ -704,6 +704,7 @@ function procesarDF(rows) {
       FBE:fbe, VEHICULOS:vehiculos, PALLETS:pallets, TPDC:tpdc, LINEAS_R:lineasR,
       GRUPO:r['GRUPO']||'', FECHA_RESERVA:r['FECHA_RESERVA']||'',
       CF_TRASLADO:cfTraslado, FECHA_TRASLADO_DT:fechaTraslado, HORA_TRASLADO:horaTraslado,
+      ROW_UID: idx,
       HID_DT_SIM:null, LINEAS_R_SIM:null, TPDC_SIM:null, OCA_SIM:null, TIENE_TRASLADO:false,
     };
   });
@@ -721,6 +722,16 @@ function buildFiltroConsolidado(row) {
   const fecha = formatFechaReservaCorta(row.FECHA_RESERVA_DT);
   const grupo = String(row.GRUPO || '').trim();
   return [vuelo, fecha, grupo].filter(Boolean).join(' | ');
+}
+
+function buildSimulacionKey(row) {
+  return String(row?.ROW_UID ?? '');
+}
+
+function buildSimulacionLabel(row) {
+  const base = buildFiltroConsolidado(row);
+  const extra = [String(row?.OTA_ID || '').trim(), String(row?.MATRICULA || '').trim()].filter(Boolean).join(' / ');
+  return extra ? `${base} | ${extra}` : base;
 }
 
 function calcularLimiteHFD(row) {
@@ -809,14 +820,12 @@ function updateOtaDropdown() {
   const end=parseFechaInput(document.getElementById('fecha-fin').value)||new Date(8640000000000000);
   if(end) end.setHours(23,59,59,999);
   const ocas=getOcasSeleccionadas();
-  const filtros=[...new Set(
-    dfGlobal
+  const filtros=dfGlobal
       .filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&ocas.includes(r.OCA)&&!['CECO','FX'].includes(r.OTA))
-      .map(r=>buildFiltroConsolidado(r))
-      .filter(Boolean)
-  )].sort();
+      .map(r=>({ value: buildSimulacionKey(r), text: buildSimulacionLabel(r) }))
+      .filter(f=>f.value);
   sel.innerHTML='<option value="">Seleccionar vuelo / fecha / grupo</option>';
-  filtros.forEach(filtro=>{ const op=document.createElement('option'); op.value=filtro; op.textContent=filtro; sel.appendChild(op); });
+  filtros.forEach(filtro=>{ const op=document.createElement('option'); op.value=filtro.value; op.textContent=filtro.text; sel.appendChild(op); });
 }
 
 // ═══════════════════════════════════════════
@@ -958,7 +967,7 @@ function renderChart(){
   let dff=dfGlobal.filter(r=>r.FECHA_OP_DT&&r.FECHA_OP_DT>=start&&r.FECHA_OP_DT<=end&&!['CECO','FX'].includes(r.OTA)).map(r=>({...r}));
   if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para el rango seleccionado',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
 
-  dff.forEach(r=>{ const sim=simulaciones[buildFiltroConsolidado(r)]; if(!sim) return; if(sim.hid_dt_sim) r.HID_DT=sim.hid_dt_sim; if(sim.lineas_r_sim) r.LINEAS_R=sim.lineas_r_sim; if(sim.tpdc_sim) r.TPDC=sim.tpdc_sim; if(sim.oca_sim) r.OCA=sim.oca_sim; });
+  dff.forEach(r=>{ const sim=simulaciones[buildSimulacionKey(r)]; if(!sim) return; if(sim.hid_dt_sim) r.HID_DT=sim.hid_dt_sim; if(sim.lineas_r_sim) r.LINEAS_R=sim.lineas_r_sim; if(sim.tpdc_sim) r.TPDC=sim.tpdc_sim; if(sim.oca_sim) r.OCA=sim.oca_sim; });
   dff.forEach(r=>{ if(r.CF_TRASLADO&&CAPACIDADES[r.CF_TRASLADO]&&r.FECHA_TRASLADO_DT&&r.HORA_TRASLADO){ const hT=parseHora(r.HORA_TRASLADO,r.FECHA_TRASLADO_DT); if(hT){r.OCA_ORIGINAL=r.OCA;r.OCA=r.CF_TRASLADO;r.HID_DT_ORIGINAL=r.HID_DT;r.HID_DT=hT;r.TIENE_TRASLADO=true;}} });
   dff=dff.filter(r=>ocasSel.includes(r.OCA));
   if(!dff.length){ Plotly.newPlot('grafico-maestro',[],{paper_bgcolor:'transparent',plot_bgcolor:'transparent',annotations:[{text:'Sin datos para las OCAs seleccionadas',xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false,font:{size:18,color:'#8faac5'}}]}); return; }
@@ -992,7 +1001,7 @@ function renderChart(){
   Object.keys(CC).forEach(k=>delete CC[k]); Object.keys(PC).forEach(k=>delete PC[k]);
   const filasPorFiltro = new Map();
   dff.forEach(r => {
-    const key = buildFiltroConsolidado(r);
+    const key = buildSimulacionKey(r);
     if (key && !filasPorFiltro.has(key)) filasPorFiltro.set(key, r);
   });
   const otaIds=[...filasPorFiltro.keys()];
@@ -1004,16 +1013,16 @@ function renderChart(){
     rows.forEach(r=>{
       if(!r.HID_DT||!r.X_FIN) return;
       xs.push(r.HID_DT); xe.push(r.X_FIN); ys.push(r.ID_FILA);
-      texts.push(`<b>${String(r.ID_VUELO||'').replace('_','')} - ${formatFechaReservaCorta(r.FECHA_RESERVA_DT)} - ${String(r.GRUPO||'').trim()}</b><br>${r._G}${r._P} Plls | ${r._L} Vent`);
+      texts.push(`<b>${String(r.ID_VUELO||'').replace('_','')} - ${formatFechaReservaCorta(r.FECHA_RESERVA_DT)} - ${String(r.GRUPO||'').trim()}</b><br>${r._P} Plls | ${r._L} Vent`);
       cd.push([String(r.OTA_ID||r.ID_VUELO||'').trim(),r.MATRICULA||'—',fmtHM(r.HID_DT),fmtHM(r.HFD_REAL),fmtHM(r.X_FIN),
         r.ETD_REAL_DT?fmtDMHM(r.ETD_REAL_DT):'N/A',r.FH_ATD_DT?fmtDMHM(r.FH_ATD_DT):'N/A',
         r.FBE.toLocaleString('es-CO'),r.VEHICULOS,r.TIENE_TRASLADO?'Sí':'No',`${r.PORC_OCUP||0}%`,String(r.LIBRES??0)]);
     });
     if(!xs.length) return;
-    traces.push({type:'bar',name:id,x:xs.map((s,i)=>xe[i]-s),base:xs,y:ys,orientation:'h',width:.82,
+    traces.push({type:'bar',name:buildFiltroConsolidado(rows[0])||id,x:xs.map((s,i)=>xe[i]-s),base:xs,y:ys,orientation:'h',width:.82,
       marker:{color,line:{width:1,color:'rgba(0,0,0,.3)'}},
       text:texts,textposition:'inside',insidetextanchor:'middle',
-      textfont:{color:'white',size:12,family:'Rajdhani, sans-serif'},
+      textfont:{color:'white',size:14,family:'Rajdhani, sans-serif'},
       customdata:cd,
         hovertemplate:'<b>✈️ %{customdata[0]}</b><br>🔢 MAT: %{customdata[1]}<br>📦 FBE: %{customdata[7]}|⏱️%{customdata[8]}s <br>🚗 VEHICULOS: %{customdata[8]}<br>🕐 HID: %{customdata[2]} | 🏁 HFD: %{customdata[3]}<br>🚪 Salida CF: %{customdata[4]}<br>✈️ ETD: %{customdata[5]}<br>🛬 ATD: %{customdata[6]}<br>🔄 Traslado: %{customdata[9]}<extra></extra>',
       showlegend:false});
