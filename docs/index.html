@@ -540,7 +540,7 @@
           <div class="panel-item" style="font-size:13px;"><span>🕐 ETD pend.:</span><b id="pv-etd" style="color:#3498db;">0</b></div>
           <div class="panel-item" style="font-size:13px;"><span>❌ Tarde:</span><b id="pv-tarde" style="color:#e74c3c;">0</b></div>
         </div>
-        <button class="close-btn" data-close-plan-vuelos="1" type="button">×</button>
+        <button class="close-btn" data-close-plan-vuelos="1" type="button" onclick="cerrarPlanVuelos()">×</button>
       </div>
     </div>
 
@@ -588,7 +588,7 @@
     </div>
 
     <div class="modal-footer" style="flex-shrink:0;align-items:center;">
-      <button class="btn btn-gold" data-close-plan-vuelos="1" type="button">Cerrar</button>
+      <button class="btn btn-gold" data-close-plan-vuelos="1" type="button" onclick="cerrarPlanVuelos()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1381,7 +1381,11 @@ function updatePanel(dff){
 //  Filtra por FECHA_RESERVA, muestra TODAS las estaciones
 // ═══════════════════════════════════════════
 function abrirPlanVuelos(){
-  document.getElementById('modal-plan-vuelos').classList.add('open');
+  const overlay = document.getElementById('modal-plan-vuelos');
+  if (overlay) {
+    overlay.style.display = '';
+    overlay.classList.add('open');
+  }
   const now=new Date();
   const ayer=new Date(now); ayer.setDate(now.getDate()-1);
   const manana=new Date(now); manana.setDate(now.getDate()+1);
@@ -1391,34 +1395,51 @@ function abrirPlanVuelos(){
   cargarPlanVuelos();
 }
 function cerrarPlanVuelos(){
-  if (intervaloMapa) {
-    clearInterval(intervaloMapa);
-    intervaloMapa = null;
-  }
-  document.getElementById('modal-plan-vuelos').classList.remove('open');
-  const contMapa = document.getElementById('mapa-container-plan');
-  if (contMapa && !ultimosVuelosMapa?.length) {
-    contMapa.innerHTML = `<div class="placeholder-mapa" style="height:100%;">
-      <span style="font-size:48px;">🗺️</span>
-      <p>Mapa de seguimiento de vuelos</p>
-      <p class="hint">Presione "Cargar Mapa" para ver la ubicación de los vuelos activos</p>
-    </div>`;
+  try {
+    console.log('cerrarPlanVuelos() invoked');
+    if (intervaloMapa) {
+      clearInterval(intervaloMapa);
+      intervaloMapa = null;
+    }
+    const overlay = document.getElementById('modal-plan-vuelos');
+    if (overlay) {
+      overlay.classList.remove('open');
+    }
+    const contMapa = document.getElementById('mapa-container-plan');
+    if (contMapa && !ultimosVuelosMapa?.length) {
+      contMapa.innerHTML = `<div class="placeholder-mapa" style="height:100%;">
+        <span style="font-size:48px;">🗺️</span>
+        <p>Mapa de seguimiento de vuelos</p>
+        <p class="hint">Presione "Cargar Mapa" para ver la ubicación de los vuelos activos</p>
+      </div>`;
+    }
+  } catch (e) {
+    console.error('Error en cerrarPlanVuelos:', e);
   }
 }
 
 function bindPlanVuelosCloseHandlers() {
-  const overlay = document.getElementById('modal-plan-vuelos');
-  if (!overlay || overlay.dataset.closeBound === '1') return;
+  if (document.body.dataset.planVuelosCloseBound === '1') return;
 
-  overlay.dataset.closeBound = '1';
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) {
+  document.body.dataset.planVuelosCloseBound = '1';
+  document.addEventListener('click', (event) => {
+    const closeButton = event.target.closest('[data-close-plan-vuelos="1"]');
+    if (closeButton) {
+      event.preventDefault();
+      cerrarPlanVuelos();
+      return;
+    }
+
+    const overlay = document.getElementById('modal-plan-vuelos');
+    if (overlay && event.target === overlay) {
       cerrarPlanVuelos();
     }
   });
 
-  overlay.querySelectorAll('[data-close-plan-vuelos="1"]').forEach((btn) => {
-    btn.addEventListener('click', cerrarPlanVuelos);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.getElementById('modal-plan-vuelos')?.classList.contains('open')) {
+      cerrarPlanVuelos();
+    }
   });
 }
 
