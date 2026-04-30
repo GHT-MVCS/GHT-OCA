@@ -1647,6 +1647,31 @@ let markersAviones = [];
 let rutasMapa = [];
 let ultimosVuelosMapa = null;
 let intervaloMapa = null;
+const ULTIMO_MAPA_STORAGE_KEY = 'oca:last-flight-map';
+
+function guardarUltimoMapa(vuelos) {
+  try {
+    if (!Array.isArray(vuelos) || !vuelos.length) return;
+    localStorage.setItem(ULTIMO_MAPA_STORAGE_KEY, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      vuelos,
+    }));
+  } catch (error) {
+    console.warn('⚠️ No se pudo guardar el último mapa:', error?.message || error);
+  }
+}
+
+function cargarUltimoMapaGuardado() {
+  try {
+    const raw = localStorage.getItem(ULTIMO_MAPA_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.vuelos) && parsed.vuelos.length ? parsed.vuelos : null;
+  } catch (error) {
+    console.warn('⚠️ No se pudo leer el último mapa guardado:', error?.message || error);
+    return null;
+  }
+}
 
 function inicializarMapaPlanVuelos() {
   const container = document.getElementById('mapa-container-plan');

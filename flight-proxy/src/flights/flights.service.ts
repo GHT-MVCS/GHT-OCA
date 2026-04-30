@@ -117,6 +117,55 @@ export class FlightsService {
         return null;
       }
 
+      const buildPayload = (flight: any, pos: any, coords?: { lat: number; lon: number } | null) => ({
+        ident,
+        callsign: flight.ident_icao || flight.ident || ident,
+        reg: flight.registration || ident,
+        operador: flight.operator || flight.operator_icao || flight.operator_iata || '',
+        aircraft_type: flight.aircraft_type || '',
+        flight_number: flight.flight_number || '',
+        estado: flight.status || '',
+        origen: flight.origin?.code_iata || flight.origin?.code_icao || '',
+        origen_nombre: flight.origin?.name || '',
+        origen_ciudad: flight.origin?.city || '',
+        destino: flight.destination?.code_iata || flight.destination?.code_icao || '',
+        destino_nombre: flight.destination?.name || '',
+        destino_ciudad: flight.destination?.city || '',
+        departure_delay: flight.departure_delay ?? null,
+        arrival_delay: flight.arrival_delay ?? null,
+        filed_ete: flight.filed_ete ?? null,
+        progress_percent: flight.progress_percent ?? null,
+        route: flight.route || '',
+        route_distance: flight.route_distance ?? null,
+        filed_airspeed: flight.filed_airspeed ?? null,
+        filed_altitude: flight.filed_altitude ?? null,
+        scheduled_out: flight.scheduled_out ?? null,
+        estimated_out: flight.estimated_out ?? null,
+        actual_out: flight.actual_out ?? null,
+        scheduled_off: flight.scheduled_off ?? null,
+        estimated_off: flight.estimated_off ?? null,
+        actual_off: flight.actual_off ?? null,
+        scheduled_on: flight.scheduled_on ?? null,
+        estimated_on: flight.estimated_on ?? null,
+        actual_on: flight.actual_on ?? null,
+        scheduled_in: flight.scheduled_in ?? null,
+        estimated_in: flight.estimated_in ?? null,
+        actual_in: flight.actual_in ?? null,
+        gate_origin: flight.gate_origin ?? null,
+        gate_destination: flight.gate_destination ?? null,
+        terminal_origin: flight.terminal_origin ?? null,
+        terminal_destination: flight.terminal_destination ?? null,
+        actual_runway_off: flight.actual_runway_off ?? null,
+        actual_runway_on: flight.actual_runway_on ?? null,
+        lat: pos?.latitude ?? coords?.lat ?? null,
+        lon: pos?.longitude ?? coords?.lon ?? null,
+        alt: pos?.altitude ?? 0,
+        vel: pos?.groundspeed ?? 0,
+        heading: pos?.heading ?? 0,
+        tierra: pos ? (pos.altitude ?? 0) < 200 : true,
+        timestamp: pos?.timestamp || flight.timestamp || new Date().toISOString(),
+      });
+
       // FILTRO: Solo vuelos con last_position (que están o estuvieron en vuelo)
       const vuelosConPos = vuelos.filter((f) => f.last_position && f.last_position.latitude !== null);
       
@@ -139,19 +188,9 @@ export class FlightsService {
 
         console.log(`ℹ️ ${ident}: Usando coordenadas de aeropuerto ${coords.lat},${coords.lon} para mostrar vuelo (${originCode || destCode})`);
         return {
-          ident,
-          callsign: candidato.ident_icao || candidato.ident || ident,
-          reg: candidato.registration || ident,
-          origen: candidato.origin?.code_iata || candidato.origin?.code_icao || '',
-          destino: candidato.destination?.code_iata || candidato.destination?.code_icao || '',
+          ...buildPayload(candidato, null, coords),
           estado: `${candidato.status} (ubicación aeropuerto)` || 'En tierra',
-          lat: coords.lat,
-          lon: coords.lon,
-          alt: 0,
-          vel: 0,
-          heading: 0,
           tierra: true,
-          timestamp: candidato.timestamp || new Date().toISOString(),
         };
       }
 
@@ -163,21 +202,7 @@ export class FlightsService {
       });
 
       const pos = activo.last_position;
-      return {
-        ident,
-        callsign: activo.ident_icao || activo.ident || ident,
-        reg: activo.registration || ident,
-        origen: activo.origin?.code_iata || activo.origin?.code_icao || '',
-        destino: activo.destination?.code_iata || activo.destination?.code_icao || '',
-        estado: activo.status || '',
-        lat: pos?.latitude ?? null,
-        lon: pos?.longitude ?? null,
-        alt: pos?.altitude ?? 0,
-        vel: pos?.groundspeed ?? 0,
-        heading: pos?.heading ?? 0,
-        tierra: pos ? (pos.altitude ?? 0) < 200 : true,
-        timestamp: pos?.timestamp || null,
-      };
+      return buildPayload(activo, pos);
     } catch (err: any) {
       console.error(`❌ FlightAware [${ident}] → ${err.message}`, err.response?.status, err.response?.data);
       return null;
