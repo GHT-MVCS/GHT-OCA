@@ -16,8 +16,9 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  // Servir index.html y archivos estáticos desde la raíz del proyecto
-  app.useStaticAssets(join(__dirname, '..', '..', '..'), {
+  // Servir index.html y archivos estáticos desde la raíz del proyecto (carpeta GHT-OCA)
+  // __dirname = .../flight-proxy/src -> join(__dirname, '..', '..') => /workspaces/GHT-OCA
+  app.useStaticAssets(join(__dirname, '..', '..'), {
     index: ['index.html'],
   });
 

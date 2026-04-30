@@ -8,6 +8,21 @@ export class FlightsService {
   private readonly apiKeys: string[];
   private currentKeyIndex = 0;
   private readonly BASE_URL = 'https://aeroapi.flightaware.com/aeroapi';
+  // Mapa local de coordenadas de aeropuertos (IATA/ICAO -> {lat, lon})
+  // Añade aquí los aeropuertos más usados para fallback cuando FlightAware no devuelve last_position
+  private readonly AIRPORT_COORDS: Record<string, { lat: number; lon: number }> = {
+    MGA: { lat: 12.1409, lon: -86.1686 }, // Augusto C. Sandino (MGA)
+    MIA: { lat: 25.7959, lon: -80.2870 }, // Miami
+    SJU: { lat: 18.4394, lon: -66.0018 }, // San Juan
+    SAP: { lat: 15.4526, lon: -87.9236 }, // San Pedro Sula (SAP/MHLM)
+    SDQ: { lat: 18.4297, lon: -69.6689 }, // Santo Domingo (SDQ/MDSD)
+    GND: { lat: 12.0041, lon: -61.7868 }, // Grenada Point Salines (GND/TGPY)
+    BOG: { lat: 4.7016, lon: -74.1469 },  // Bogotá
+    LAX: { lat: 33.9416, lon: -118.4085 }, // Los Angeles
+    UIO: { lat: -0.1297, lon: -78.3570 },   // Quito - Mariscal Sucre (approx)
+    MDE: { lat: 6.1645, lon: -75.4236 },    // Jose María Córdova (Medellín)
+    // puedes agregar más entradas según tus necesidades
+  };
 
   constructor(
     private readonly httpService: HttpService,
@@ -102,76 +117,66 @@ export class FlightsService {
         return null;
       }
 
-      // Prioridad: 1) con last_position, 2) próximo a despegar (Programado/Scheduled), 3) primero disponible
-      let activo = vuelos.find((f) => f.last_position);
-      if (!activo) {
-        activo = vuelos.find((f) => 
-          f.status === 'Programado' || f.status === 'Scheduled' || f.status === 'En Vuelo' || f.status === 'Enroute'
-        );
-      }
-      if (!activo) {
-        // Tomar el más reciente/relevante (más alto progress_percent)
-        activo = vuelos.reduce((a, b) => 
-          ((b.progress_percent || 0) > (a.progress_percent || 0)) ? b : a
-        );
-      }
+      // FILTRO: Solo vuelos con last_position (que están o estuvieron en vuelo)
+      const vuelosConPos = vuelos.filter((f) => f.last_position && f.last_position.latitude !== null);
       
-      if (!activo) {
-        console.warn(`⚠️ FlightAware: ${ident} sin datos válidos`, { vuelos });
-        return null;
-      }
+      if (!vuelosConPos.length) {
+        console.warn(`⚠️ ${ident}: No hay vuelos con coordenadas activas (last_position)`);
+        console.warn(`   Vuelos disponibles: ${vuelos.map(v => `[${v.status}]`).join(', ')}`);
 
-      // Si tiene last_position (en vuelo), usar esas coordenadas
-      const pos = activo.last_position;
-      if (pos) {
+        // Intentar fallback usando el código IATA/ICAO del origen o destino y el mapa local
+        const candidato = vuelos[0];
+        const originCodeRaw = candidato.origin?.code_iata || candidato.origin?.code_icao || candidato.origin?.code || '';
+        const destCodeRaw = candidato.destination?.code_iata || candidato.destination?.code_icao || candidato.destination?.code || '';
+        const originCode = (originCodeRaw || '').toUpperCase();
+        const destCode = (destCodeRaw || '').toUpperCase();
+
+        const coords = this.AIRPORT_COORDS[originCode] || this.AIRPORT_COORDS[destCode] || null;
+        if (!coords) {
+          console.warn(`⚠️ ${ident}: No hay coordenadas de aeropuerto para fallback (${originCode} / ${destCode})`);
+          return null;
+        }
+
+        console.log(`ℹ️ ${ident}: Usando coordenadas de aeropuerto ${coords.lat},${coords.lon} para mostrar vuelo (${originCode || destCode})`);
         return {
           ident,
-          callsign: activo.ident_icao || activo.ident || ident,
-          reg: activo.registration || ident,
-          origen: activo.origin?.code_iata || activo.origin?.code_icao || '',
-          destino: activo.destination?.code_iata || activo.destination?.code_icao || '',
-          estado: activo.status || '',
-          lat: pos?.latitude ?? null,
-          lon: pos?.longitude ?? null,
-          alt: pos?.altitude ?? 0,
-          vel: pos?.groundspeed ?? 0,
-          heading: pos?.heading ?? 0,
-          tierra: pos ? (pos.altitude ?? 0) < 200 : true,
-          timestamp: pos?.timestamp || null,
+          callsign: candidato.ident_icao || candidato.ident || ident,
+          reg: candidato.registration || ident,
+          origen: candidato.origin?.code_iata || candidato.origin?.code_icao || '',
+          destino: candidato.destination?.code_iata || candidato.destination?.code_icao || '',
+          estado: `${candidato.status} (ubicación aeropuerto)` || 'En tierra',
+          lat: coords.lat,
+          lon: coords.lon,
+          alt: 0,
+          vel: 0,
+          heading: 0,
+          tierra: true,
+          timestamp: candidato.timestamp || new Date().toISOString(),
         };
       }
 
-      // Si NO tiene last_position pero tiene coordenadas de origen/destino, 
-      // crear posición simulada en el origen o con status de tierra
-      console.warn(
-        `⚠️ ${ident} SIN last_position. Status: ${activo.status}. ` +
-        `Usando posición de origen como fallback.`
-      );
-      
-      const originCoord = activo.origin?.latitude && activo.origin?.longitude
-        ? { lat: activo.origin.latitude, lon: activo.origin.longitude }
-        : null;
+      // ORDENAR: Tomar el más reciente por progress_percent o timestamp
+      const activo = vuelosConPos.reduce((a, b) => {
+        const aProgress = a.progress_percent ?? 0;
+        const bProgress = b.progress_percent ?? 0;
+        return bProgress > aProgress ? b : a;
+      });
 
-      if (!originCoord) {
-        console.warn(`⚠️ ${ident} sin posición ni coordenadas de origen`);
-        return null;
-      }
-
-      // Retornar posición simulada en tierra
+      const pos = activo.last_position;
       return {
         ident,
         callsign: activo.ident_icao || activo.ident || ident,
         reg: activo.registration || ident,
         origen: activo.origin?.code_iata || activo.origin?.code_icao || '',
         destino: activo.destination?.code_iata || activo.destination?.code_icao || '',
-        estado: `${activo.status} (posición origen)` || 'En tierra',
-        lat: originCoord.lat,
-        lon: originCoord.lon,
-        alt: 0,
-        vel: 0,
-        heading: 0,
-        tierra: true,
-        timestamp: activo.timestamp || new Date().toISOString(),
+        estado: activo.status || '',
+        lat: pos?.latitude ?? null,
+        lon: pos?.longitude ?? null,
+        alt: pos?.altitude ?? 0,
+        vel: pos?.groundspeed ?? 0,
+        heading: pos?.heading ?? 0,
+        tierra: pos ? (pos.altitude ?? 0) < 200 : true,
+        timestamp: pos?.timestamp || null,
       };
     } catch (err: any) {
       console.error(`❌ FlightAware [${ident}] → ${err.message}`, err.response?.status, err.response?.data);
