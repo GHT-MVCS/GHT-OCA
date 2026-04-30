@@ -102,32 +102,76 @@ export class FlightsService {
         return null;
       }
 
-      const activo = vuelos.find((f) => f.last_position) || vuelos[0];
+      // Prioridad: 1) con last_position, 2) próximo a despegar (Programado/Scheduled), 3) primero disponible
+      let activo = vuelos.find((f) => f.last_position);
       if (!activo) {
-        console.warn(`⚠️ FlightAware: ${ident} sin posición`, { vuelos });
+        activo = vuelos.find((f) => 
+          f.status === 'Programado' || f.status === 'Scheduled' || f.status === 'En Vuelo' || f.status === 'Enroute'
+        );
+      }
+      if (!activo) {
+        // Tomar el más reciente/relevante (más alto progress_percent)
+        activo = vuelos.reduce((a, b) => 
+          ((b.progress_percent || 0) > (a.progress_percent || 0)) ? b : a
+        );
+      }
+      
+      if (!activo) {
+        console.warn(`⚠️ FlightAware: ${ident} sin datos válidos`, { vuelos });
         return null;
       }
 
+      // Si tiene last_position (en vuelo), usar esas coordenadas
       const pos = activo.last_position;
-      if (!pos) {
-        console.warn(`⚠️ ${ident} sin last_position. Estado: ${activo.status}`);
+      if (pos) {
+        return {
+          ident,
+          callsign: activo.ident_icao || activo.ident || ident,
+          reg: activo.registration || ident,
+          origen: activo.origin?.code_iata || activo.origin?.code_icao || '',
+          destino: activo.destination?.code_iata || activo.destination?.code_icao || '',
+          estado: activo.status || '',
+          lat: pos?.latitude ?? null,
+          lon: pos?.longitude ?? null,
+          alt: pos?.altitude ?? 0,
+          vel: pos?.groundspeed ?? 0,
+          heading: pos?.heading ?? 0,
+          tierra: pos ? (pos.altitude ?? 0) < 200 : true,
+          timestamp: pos?.timestamp || null,
+        };
+      }
+
+      // Si NO tiene last_position pero tiene coordenadas de origen/destino, 
+      // crear posición simulada en el origen o con status de tierra
+      console.warn(
+        `⚠️ ${ident} SIN last_position. Status: ${activo.status}. ` +
+        `Usando posición de origen como fallback.`
+      );
+      
+      const originCoord = activo.origin?.latitude && activo.origin?.longitude
+        ? { lat: activo.origin.latitude, lon: activo.origin.longitude }
+        : null;
+
+      if (!originCoord) {
+        console.warn(`⚠️ ${ident} sin posición ni coordenadas de origen`);
         return null;
       }
 
+      // Retornar posición simulada en tierra
       return {
         ident,
         callsign: activo.ident_icao || activo.ident || ident,
         reg: activo.registration || ident,
         origen: activo.origin?.code_iata || activo.origin?.code_icao || '',
         destino: activo.destination?.code_iata || activo.destination?.code_icao || '',
-        estado: activo.status || '',
-        lat: pos?.latitude ?? null,
-        lon: pos?.longitude ?? null,
-        alt: pos?.altitude ?? 0,
-        vel: pos?.groundspeed ?? 0,
-        heading: pos?.heading ?? 0,
-        tierra: pos ? (pos.altitude ?? 0) < 200 : true,
-        timestamp: pos?.timestamp || null,
+        estado: `${activo.status} (posición origen)` || 'En tierra',
+        lat: originCoord.lat,
+        lon: originCoord.lon,
+        alt: 0,
+        vel: 0,
+        heading: 0,
+        tierra: true,
+        timestamp: activo.timestamp || new Date().toISOString(),
       };
     } catch (err: any) {
       console.error(`❌ FlightAware [${ident}] → ${err.message}`, err.response?.status, err.response?.data);

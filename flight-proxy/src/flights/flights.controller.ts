@@ -65,11 +65,26 @@ export class FlightsController {
       ...config
     };
   }
+
+  // GET /api/flights/debug?id=N319CM
   @Get('debug')
   async getDebug(@Query('id') id: string) {
     if (!id) return { error: 'Falta ?id=MATRICULA' };
-    const url = `${this.flightsService['BASE_URL']}/flights/${encodeURIComponent(id.trim().toUpperCase())}`;
-    const data = await this.flightsService['callFlightAware'](url);
-    return data;
+    console.log(`📥 /api/flights/debug?id=${id}`);
+    try {
+      const vuelo = await this.flightsService.getVueloActivo(id.trim().toUpperCase());
+      return { 
+        success: !!vuelo, 
+        data: vuelo,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error: any) {
+      console.error('❌ Error en /api/flights/debug:', error.message);
+      return { 
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
