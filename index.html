@@ -624,7 +624,6 @@ function getProxyBases() {
   if (override) bases.push(override.replace(/\/$/, ''));
 
   bases.push(PROXY_BASE.replace(/\/$/, ''));
-  bases.push(BACKEND_URL);  // ← AGREGAR ESTA LÍNEA
 
   const { protocol, hostname } = window.location;
   // GitHub Pages → add Render fallbacks
@@ -1696,7 +1695,6 @@ function getIdsDelDia() {
   });
   return { matriculas: [...matsUnicas], otaIds: [...otasUnicas] };
 }
-const BACKEND_URL = 'https://ght-oca-backend-37dx.onrender.com';
 async function actualizarMapaAviones(forzar = false) {
   if (!mapaPlanVuelos) return;
   if (!forzar && ultimosVuelosMapa && ultimosVuelosMapa.length) {

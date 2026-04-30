@@ -601,7 +601,7 @@ const PROXY_BASE = (() => {
   const { protocol, hostname, port } = window.location;
   // GitHub Pages → expect Render backend
   if (hostname.includes('github.io')) {
-    return 'https://ght-oca-backend.onrender.com';
+    return 'https://ght-oca-backend-37dx.onrender.com';
   }
   if (hostname.endsWith('.app.github.dev')) {
     return `${protocol}//${hostname.replace(/-8080(?=\.app\.github\.dev$)/, '-3000')}`;
@@ -628,7 +628,7 @@ function getProxyBases() {
   const { protocol, hostname } = window.location;
   // GitHub Pages → add Render fallbacks
   if (hostname.includes('github.io')) {
-    bases.push('https://ght-oca-backend.onrender.com');
+    bases.push('https://ght-oca-backend-37dx.onrender.com');
   }
   if (hostname.endsWith('.app.github.dev')) {
     bases.push(`${protocol}//${hostname.replace(/-8080(?=\.app\.github\.dev$)/, '-3000')}`);
