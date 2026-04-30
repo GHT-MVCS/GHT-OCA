@@ -615,6 +615,8 @@ const PROXY_BASE = (() => {
   return 'http://localhost:3000';
 })();
 
+const ES_GITHUB_PAGES = window.location.hostname.includes('github.io');
+
 function getProxyBases() {
   const bases = [];
   const params = new URLSearchParams(window.location.search);
@@ -636,8 +638,10 @@ function getProxyBases() {
     bases.push(`${protocol}//${hostname}:3000`);
   }
 
-  bases.push('http://localhost:3000');
-  bases.push('http://127.0.0.1:3000');
+  if (!ES_GITHUB_PAGES) {
+    bases.push('http://localhost:3000');
+    bases.push('http://127.0.0.1:3000');
+  }
 
   return [...new Set(bases.map(b => b.replace(/\/$/, '')))].filter(Boolean);
 }
@@ -1680,9 +1684,16 @@ async function actualizarMapaAviones(forzar = false) {
   mostrarLoadingMapa(container);
 
   try {
+    const pingTimeoutMs = ES_GITHUB_PAGES ? 45000 : 5000;
+    const liveTimeoutMs = ES_GITHUB_PAGES ? 30000 : 15000;
+
+    if (ES_GITHUB_PAGES) {
+      showToast('⏳ Render Free puede tardar 30-60s en despertar...', '#f0b429');
+    }
+
     // 1. Verificar que el servidor está disponible
     console.log('🔍 Verificando conexión con Flight-Proxy...');
-    const healthData = await fetchJsonConFallback('/api/flights/ping', 5000);
+    const healthData = await fetchJsonConFallback('/api/flights/ping', pingTimeoutMs);
     
     if (healthData.apiKeysLoaded === 0) {
       throw new Error('🔴 CRÍTICO: No hay API keys configuradas en el servidor.\n\nConfigura FLIGHT_AWARE_KEY_1 y FLIGHT_AWARE_KEY_2 en /flight-proxy/.env');
@@ -1693,7 +1704,7 @@ async function actualizarMapaAviones(forzar = false) {
     // 2. Consultar vuelos
     const path = `/api/flights/live?ids=${todosIds.join(',')}`;
     console.log('✈️ Consultando FlightAware:', `${getProxyBases()[0]}${path}`);
-    const data = await fetchJsonConFallback(path, 15000);
+    const data = await fetchJsonConFallback(path, liveTimeoutMs);
     
     // Mostrar errores si existen
     if (data.error) {
@@ -1738,9 +1749,14 @@ async function actualizarMapaAviones(forzar = false) {
     console.error('❌ Error al obtener posiciones:', msgError);
     
     // Diferenciar tipos de error
-    if (msgError.includes('timeout') || msgError.includes('net::ERR')) {
-      showToast('❌ Servidor no responde. Verifica que Flight-Proxy está corriendo.', '#e74c3c');
-      mostrarMensajeMapa('Error de conexión\n\n⚠️ Asegúrate que:\n1. El servidor está corriendo\n2. PROXY_BASE es correcto\n3. No hay bloqueo de CORS');
+    if (msgError.includes('timeout') || msgError.includes('Failed to fetch') || msgError.includes('net::ERR')) {
+      if (ES_GITHUB_PAGES) {
+        showToast('❌ Render no respondió a tiempo. Reintenta en 20-40 segundos.', '#e74c3c');
+        mostrarMensajeMapa('Render está despertando o no está activo.\n\nReintenta en 20-40 segundos.\n\nSi persiste:\n1. Verifica que el servicio esté Running en Render\n2. Abre /api/flights/ping directamente\n3. Revisa variables FLIGHT_AWARE_KEY_1 y FLIGHT_AWARE_KEY_2');
+      } else {
+        showToast('❌ Servidor no responde. Verifica que Flight-Proxy está corriendo.', '#e74c3c');
+        mostrarMensajeMapa('Error de conexión\n\n⚠️ Asegúrate que:\n1. El servidor está corriendo\n2. PROXY_BASE es correcto\n3. No hay bloqueo de CORS');
+      }
     } else if (msgError.includes('API') || msgError.includes('FlightAware')) {
       showToast('❌ Error de FlightAware. Verifica API keys en .env', '#e74c3c');
       mostrarMensajeMapa(msgError);
