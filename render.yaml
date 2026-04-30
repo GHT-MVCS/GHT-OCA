@@ -3,35 +3,17 @@ services:
     name: ght-oca-backend
     runtime: docker
     dockerfilePath: flight-proxy/Dockerfile
+    dockerContext: flight-proxy
     branch: main
     region: frankfurt
     plan: free
-    
-    # Variables de entorno (configura tus API keys aquí)
+    healthCheckPath: /api/flights/ping
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      
-      # ⚠️ IMPORTANTE: Configura tus API keys
-      # Opción 1: Sincronizar desde archivo .env del repo (NO SE RECOMIENDA - expone secretos)
-      # Opción 2: Configurarlas manualmente en el dashboard de Render
-      # Ver instrucciones abajo
       - key: FLIGHT_AWARE_KEY_1
-        sync: false  # Configura manualmente en Render dashboard
+        sync: false
       - key: FLIGHT_AWARE_KEY_2
-        sync: false  # Configura manualmente en Render dashboard
-
-    # Salud del servicio
-    healthCheckPath: /api/flights/ping
-    
-
-# Instrucciones:
-# 1. Conecta tu repo de GitHub a Render: https://render.com
-# 2. Sube este archivo como render.yaml a la raíz de tu repo
-# 3. En Render Dashboard:
-#    - New → Blueprint → Conecta tu repo
-#    - Selecciona render.yaml
-#    - Configura Environment Variables (FLIGHT_AWARE_KEY_1 y KEY_2)
-# 4. Deploy automático cada vez que hagas push a main
+        sync: false
