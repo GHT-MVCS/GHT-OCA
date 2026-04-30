@@ -6,6 +6,7 @@
 <title>✈️ PLAN OCA - Dashboard Logístico</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -127,7 +128,7 @@
 
 .layout-dos-columnas {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   height: 100%;
   min-height: 0;
   flex: 1;
@@ -136,7 +137,7 @@
 
 /* COLUMNA TABLA */
 .col-tabla {
-  flex: 2;
+  flex: 1.8;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -151,6 +152,11 @@
   overflow: auto;
   border-radius: 8px;
   position: relative;
+}
+
+.tabla-scroll-container #tabla-vuelos-dias thead th {
+  position: sticky;
+  top: 0;
 }
 
 /* ESTILOS BASE DE LA TABLA */
@@ -203,7 +209,7 @@
   z-index: 35;
 }
 
-/* Segunda columna (Estación) */
+/* Columna Estación */
 #tabla-vuelos-dias td:nth-child(2),
 #tabla-vuelos-dias th:nth-child(2) {
   position: sticky;
@@ -220,16 +226,16 @@
   z-index: 35;
 }
 
-/* Tercera columna (Vuelo) */
+/* Columna ID Vuelo / Matrícula */
 #tabla-vuelos-dias td:nth-child(3),
 #tabla-vuelos-dias th:nth-child(3) {
   position: sticky;
   left: 170px;
   z-index: 20;
   background: #0d1f38;
-  min-width: 96px;
-  width: 96px;
-  max-width: 96px;
+  min-width: 120px;
+  width: 120px;
+  max-width: 120px;
 }
 
 #tabla-vuelos-dias th:nth-child(3) {
@@ -237,46 +243,57 @@
   z-index: 35;
 }
 
-/* Cuarta columna (Matrícula/OTA) */
+/* Columna FBE */
 #tabla-vuelos-dias td:nth-child(4),
 #tabla-vuelos-dias th:nth-child(4) {
   position: sticky;
-  left: 266px;
+  left: 290px;
   z-index: 20;
   background: #0d1f38;
-  min-width: 150px;
-  width: 150px;
-  max-width: 150px;
-}
-
-#tabla-vuelos-dias th:nth-child(4) {
-  background: #0f2040;
-  z-index: 35;
-}
-
-/* Quinta columna (FBE) */
-#tabla-vuelos-dias td:nth-child(5),
-#tabla-vuelos-dias th:nth-child(5) {
-  position: sticky;
-  left: 416px;
-  z-index: 20;
-  background: #0d1f38;
-  min-width: 78px;
-  width: 78px;
-  max-width: 78px;
+  min-width: 60px;
+  width: 60px;
+  max-width: 60px;
   box-shadow: 3px 0 8px -3px rgba(0,0,0,0.45);
 }
 
-#tabla-vuelos-dias th:nth-child(5) {
+#tabla-vuelos-dias th:nth-child(4) {
   background: #0f2040;
   z-index: 35;
 }
 
 /* Columnas móviles (fechas) */
-#tabla-vuelos-dias td:nth-child(n+6),
-#tabla-vuelos-dias th:nth-child(n+6) {
+#tabla-vuelos-dias td:nth-child(n+5),
+#tabla-vuelos-dias th:nth-child(n+5) {
   position: static;
-  min-width: 105px;
+  min-width: 80px;
+}
+
+#tabla-vuelos-dias thead th:nth-child(-n+4) {
+  z-index: 40;
+}
+
+#tabla-vuelos-dias thead th:nth-child(n+5) {
+  z-index: 32;
+}
+
+.id-mat-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.id-vuelo-linea {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.matricula-linea {
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  color: var(--text-dim);
+  font-size: 11px;
 }
 
 /* Badges de estación */
@@ -312,14 +329,12 @@
   background: rgba(255,255,255,0.04);
 }
 
-#tabla-vuelos-dias tr:hover td:nth-child(-n+5) {
-  background: #0d1f38;
-}
+#tabla-vuelos-dias tr:hover td:nth-child(-n+4) { background: #0d1f38; }
 
 /* COLUMNA MAPA */
 .col-mapa {
-  flex: 1;
-  min-width: 320px;
+  flex: 2.2;
+  min-width: 420px;
   background: #0a1628;
   border-radius: 12px;
   padding: 10px;
@@ -357,6 +372,45 @@
   padding: 14px 18px;
 }
 
+.plan-header-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.plan-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plan-header-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  padding-right: 4px;
+}
+
+.plan-header-legend span {
+  white-space: nowrap;
+}
+
+.plan-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-header-stats .panel-item {
+  font-size: 12px;
+}
+
   @media(max-width:768px){ #panel-totales{flex-wrap:wrap;gap:8px;} #header-bar,#toolbar{flex-direction:column;align-items:flex-start;} #sticky-filters{top:56px;} }
 
 </style>
@@ -386,8 +440,12 @@
     <span>🔄 TRASLADOS:</span><b id="stat-traslados" style="color:#f0b429;">0</b>
     <button class="btn btn-blue btn-sm" onclick="refrescarDatos()" title="Refrescar">🔄</button>
     <button class="btn btn-purple btn-sm" onclick="abrirPlanVuelos()" title="Plan de vuelos ETD vs ATD">✈️ Plan vuelos</button>
+    <button class="btn btn-gold btn-sm" onclick="descargarExcelVuelos()" title="Descargar Excel">📥 Excel</button>
+    <button class="btn btn-blue btn-sm" onclick="document.getElementById('input-excel-vuelos').click()" title="Subir Excel">📤 Excel</button>
   </div>
 </div>
+
+<input type="file" id="input-excel-vuelos" accept=".xlsx,.xls" style="display:none;" onchange="importarExcelVuelos(event)">
 
 <div id="main-content">
   <div id="sticky-filters">
@@ -462,9 +520,28 @@
 <!-- ══════════ MODAL PLAN DE VUELOS + MAPA ══════════ -->
 <div class="modal-overlay" id="modal-plan-vuelos">
   <div class="modal-box" style="max-width:98vw;width:98vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;">
-    <div class="modal-header" style="flex-shrink:0;">
+    <div class="modal-header" style="flex-shrink:0;gap:14px;">
       <h3>📋 PLAN DE VUELOS — ETD vs ATD &nbsp;|&nbsp; Todas las estaciones</h3>
-      <button class="close-btn" onclick="cerrarPlanVuelos()">×</button>
+      <div class="plan-header-meta">
+        <div class="plan-header-tools">
+          <div class="plan-header-legend">
+            <span>🛫ATD a tiempo</span>
+            <span>|</span>
+            <span>🔴 ATD tarde</span>
+            <span>|</span>
+            <span>🛬ETD pendiente</span>
+            <span>|</span>
+            <span>⚠️ ETD vencido sin ATD</span>
+          </div>
+        </div>
+        <div class="plan-header-stats">
+          <div class="panel-item" style="font-size:13px;"><span>Total:</span><b id="pv-total">0</b></div>
+          <div class="panel-item" style="font-size:13px;"><span>🛫 ATD:</span><b id="pv-atd" style="color:#27ae60;">0</b></div>
+          <div class="panel-item" style="font-size:13px;"><span>🕐 ETD pend.:</span><b id="pv-etd" style="color:#3498db;">0</b></div>
+          <div class="panel-item" style="font-size:13px;"><span>❌ Tarde:</span><b id="pv-tarde" style="color:#e74c3c;">0</b></div>
+        </div>
+        <button class="close-btn" onclick="cerrarPlanVuelos()">×</button>
+      </div>
     </div>
 
     <!-- Filtros Plan Vuelos -->
@@ -476,13 +553,7 @@
       <span class="filter-label">🏠 Estación:</span>
       <select id="pv-estacion" style="width:120px;"><option value="">Todas</option><option value="BOG">BOG</option><option value="MDE">MDE</option><option value="UIO">UIO</option></select>
       <button class="btn btn-green btn-sm" onclick="cargarPlanVuelos()">🔄 Cargar</button>
-      <button class="btn btn-blue btn-sm" onclick="inicializarMapaPlanVuelos()">🗺️ Cargar Mapa</button>      <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <button class="btn btn-gold btn-sm" onclick="debugAdsb()">🔍 Ver datos ADS-B</button>
-        <div class="panel-item" style="font-size:13px;"><span>Total:</span><b id="pv-total">0</b></div>
-        <div class="panel-item" style="font-size:13px;"><span>🛫 ATD:</span><b id="pv-atd" style="color:#27ae60;">0</b></div>
-        <div class="panel-item" style="font-size:13px;"><span>🕐 ETD pend.:</span><b id="pv-etd" style="color:#3498db;">0</b></div>
-        <div class="panel-item" style="font-size:13px;"><span>❌ Tarde:</span><b id="pv-tarde" style="color:#e74c3c;">0</b></div>
-      </div>
+      <button class="btn btn-blue btn-sm" onclick="if(!mapaPlanVuelos) inicializarMapaPlanVuelos(); actualizarMapaAviones(true);">🗺️ Cargar Mapa</button>
     </div>
 
     <!-- Layout dos columnas: TABLA + MAPA -->
@@ -503,7 +574,7 @@
         
         <!-- COLUMNA DERECHA: MAPA -->
         <div class="col-mapa">
-          <h4>🗺️ UBICACIÓN EN TIEMPO REAL (ADS-B)</h4>
+          <h4>🗺️ UBICACIÓN EN TIEMPO REAl</h4>
           <div id="mapa-container-plan" style="flex:1;min-height:0;">
             <div class="placeholder-mapa" style="height:100%;">
               <span style="font-size:48px;">🗺️</span>
@@ -517,9 +588,6 @@
     </div>
 
     <div class="modal-footer" style="flex-shrink:0;align-items:center;">
-      <span class="hint" style="margin-right:auto;">
-        ✅ ATD a tiempo &nbsp;|&nbsp; 🔴 ATD tarde &nbsp;|&nbsp; 🕐 ETD pendiente &nbsp;|&nbsp; ⚠️ ETD vencido sin ATD
-      </span>
       <button class="btn btn-gold" onclick="cerrarPlanVuelos()">Cerrar</button>
     </div>
   </div>
@@ -529,6 +597,18 @@
 //  CONFIG
 // ═══════════════════════════════════════════
 const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQeRe5r5Hfk7b3GNrid62SYsGK-YZuXrMXGHc9qR6TcKzB4a__POp_vc1nlhCHse-4prvgAegWxcIac/pub?gid=0&single=true&output=csv";
+const PROXY_BASE = 'https://opulent-doodle-g4g5577g7rvpf9q59-3000.app.github.dev';
+// Coordenadas de aeropuertos para dibujar rutas
+const AEROPUERTOS = {
+  'BOG': { lat: 4.7016, lon: -74.1469, nombre: 'Bogotá' },
+  'MDE': { lat: 6.1645, lon: -75.4231, nombre: 'Medellín' },
+  'UIO': { lat: -0.1291, lon: -78.3575, nombre: 'Quito' },
+  'MIA': { lat: 25.795, lon: -80.287, nombre: 'Miami' },
+  'LIM': { lat: -12.0219, lon: -77.1145, nombre: 'Lima' },
+  'ASU': { lat: -25.241, lon: -57.519, nombre: 'Asunción' },
+  'GRU': { lat: -23.435, lon: -46.473, nombre: 'São Paulo' },
+  'PTY': { lat: 9.071, lon: -79.383, nombre: 'Panamá' }
+};
 
 const CAPACIDADES = {
   "BOG_GIRAG_TC1":132,"BOG_GIRAG_TC2":33,
@@ -540,6 +620,8 @@ const DIAS_ES = {Mon:"Lun",Tue:"Mar",Wed:"Mié",Thu:"Jue",Fri:"Vie",Sat:"Sab",Su
 
 let dfGlobal = [];
 let simulaciones = {};
+let ultimaVistaExcel = [];
+let ultimoMetaExcel = {};
 let chartResizeObserver = null;
 let chartResizeTimer = null;
 let chartRerenderTimer = null;
@@ -629,6 +711,7 @@ function fmtHM(dt)    { if(!dt) return 'N/A'; return `${p2(dt.getHours())}:${p2(
 function fmtDate(dt)  { if(!dt) return ''; return `${p2(dt.getDate())}/${p2(dt.getMonth()+1)}`; }
 function fmtDMHM(dt)  { if(!dt) return 'N/A'; return `${fmtDate(dt)} ${fmtHM(dt)}`; }
 function fmtFullDT(dt){ if(!dt) return 'N/A'; return `${p2(dt.getMonth()+1)}/${p2(dt.getDate())}/${dt.getFullYear()} ${p2(dt.getHours())}:${p2(dt.getMinutes())}`; }
+function fmtExcelDT(dt) { if(!dt) return ''; return fmtFullDT(dt); }
 function dayKey(dt)   { if(!dt) return ''; return `${dt.getFullYear()}-${p2(dt.getMonth()+1)}-${p2(dt.getDate())}`; }
 function todayStr()   { return new Date().toISOString().slice(0,10); }
 function addSec(dt,s) { return new Date(dt.getTime()+s*1000); }
@@ -644,6 +727,78 @@ function showToast(msg, color='#27ae60') {
   t.textContent = msg; t.style.background = color;
   t.style.display = 'block';
   setTimeout(()=>t.style.display='none', 4000);
+}
+
+function descargarExcelVuelos() {
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ La librería Excel no cargó','#e74c3c');
+    return;
+  }
+  if (!ultimaVistaExcel.length) {
+    showToast('⚠️ No hay vuelos visibles para exportar','#f0b429');
+    return;
+  }
+
+  const meta = [{
+    FECHA_INICIO: ultimoMetaExcel.fechaInicio || '',
+    FECHA_FIN: ultimoMetaExcel.fechaFin || '',
+    OCAS: (ultimoMetaExcel.ocas || []).join(', '),
+    GENERADO_EN: fmtFullDT(new Date())
+  }];
+
+  const wb = XLSX.utils.book_new();
+  const wsVuelos = XLSX.utils.json_to_sheet(ultimaVistaExcel);
+  const wsMeta = XLSX.utils.json_to_sheet(meta);
+  XLSX.utils.book_append_sheet(wb, wsVuelos, 'Vuelos');
+  XLSX.utils.book_append_sheet(wb, wsMeta, 'Meta');
+  XLSX.writeFile(wb, `plan_oca_vuelos_${todayStr()}.xlsx`);
+  showToast('✅ Excel descargado');
+}
+
+async function importarExcelVuelos(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ La librería Excel no cargó','#e74c3c');
+    return;
+  }
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: 'array', cellDates: false });
+    const hojaVuelos = wb.Sheets['Vuelos'] || wb.Sheets[wb.SheetNames[0]];
+    const filas = XLSX.utils.sheet_to_json(hojaVuelos, { defval: '' });
+    if (!filas.length) {
+      showToast('⚠️ El Excel no trae vuelos válidos','#f0b429');
+      return;
+    }
+
+    const metaHoja = wb.Sheets['Meta'];
+    const metaFilas = metaHoja ? XLSX.utils.sheet_to_json(metaHoja, { defval: '' }) : [];
+    const meta = metaFilas[0] || {};
+
+    dfGlobal = procesarDF(filas);
+    simulaciones = {};
+    ultimaVistaExcel = [];
+
+    if (meta.FECHA_INICIO) document.getElementById('fecha-inicio').value = parseDate(meta.FECHA_INICIO) ? dayKey(parseDate(meta.FECHA_INICIO)) : meta.FECHA_INICIO;
+    if (meta.FECHA_FIN) document.getElementById('fecha-fin').value = parseDate(meta.FECHA_FIN) ? dayKey(parseDate(meta.FECHA_FIN)) : meta.FECHA_FIN;
+    if (meta.OCAS) {
+      const seleccionadas = meta.OCAS.split(',').map(s => s.trim()).filter(Boolean);
+      document.querySelectorAll('#oca-checklist input[type="checkbox"]').forEach(cb => {
+        cb.checked = seleccionadas.includes(cb.value);
+      });
+    }
+
+    updateFechaIndicador();
+    updateOtaDropdown();
+    renderChart();
+    showToast('✅ Excel cargado correctamente');
+  } catch (e) {
+    console.error(e);
+    showToast('❌ No se pudo leer el Excel','#e74c3c');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -669,9 +824,10 @@ function procesarDF(rows) {
     const lineasR = parseFloat(r['LINEAS_R'])||1;
 
     const fechaBase = fechaRecep||fechaOp||new Date();
+    const hidDtExportado = parseDate(r['HID_DT']);
     let hidRaw = String(r['HID_R']||'').trim();
     if (!hidRaw||hidRaw==='nan') hidRaw='09:00';
-    const hidDt = parseHora(hidRaw, fechaBase);
+    const hidDt = hidDtExportado || parseHora(hidRaw, fechaBase);
 
     const etdReal = fhAtd||etdFinal;
 
@@ -928,7 +1084,7 @@ function ejecutarIA() {
 // ═══════════════════════════════════════════
 //  COLORES GANTT
 // ═══════════════════════════════════════════
-const CB={QT:[37,99,235],L7:[34,197,94],UPS:[168,85,247],GHT:[20,184,166],TR:[251,146,60]};
+const CB={QT:[37,99,235],L7:[28,170,82],UPS:[168,85,247],GHT:[20,184,166],TR:[251,146,60]};
 const CC={},PC={};
 function getPfx(id){ const s=String(id||'').toUpperCase(); for(const p of['QT','L7','UPS','GHT','TR']) if(s.startsWith(p)) return p; return null; }
 function getRowFamily(row){
@@ -1080,6 +1236,51 @@ function renderChart(){
   const xMax=xMaxs.length?Math.max(...xMaxs):end.getTime();
   const xPad=10*60*1000;
 
+  ultimaVistaExcel = dff.map(r => ({
+    ROW_UID: r.ROW_UID ?? '',
+    FECHA_OP_DT: fmtExcelDT(r.FECHA_OP_DT),
+    FECHA_RECEP_DT: fmtExcelDT(r.FECHA_RECEP_DT),
+    FECHA_RESERVA_DT: fmtExcelDT(r.FECHA_RESERVA_DT),
+    FECHA_RESERVA: r.FECHA_RESERVA || '',
+    FECHA_OPERACION: fmtExcelDT(r.FECHA_OP_DT),
+    OCA: r.OCA || '',
+    OTA_ID: r.OTA_ID || '',
+    OTA: r.OTA || '',
+    ID_VUELO: r.ID_VUELO || '',
+    MATRICULA: r.MATRICULA || '',
+    ORIGEN: r.ORIGEN || '',
+    FBE: r.FBE || 0,
+    PALLETS: r.PALLETS || 0,
+    VEHICULOS: r.VEHICULOS || 0,
+    TPDC: r.TPDC || 0,
+    LINEAS_R: r.LINEAS_R || 0,
+    HID_DT: fmtExcelDT(r.HID_DT),
+    ETD_FINAL: fmtExcelDT(r.ETD_FINAL_DT),
+    FH_ATD: fmtExcelDT(r.FH_ATD_DT),
+    ETD_REAL_DT: fmtExcelDT(r.ETD_REAL_DT),
+    HFD_REAL: fmtExcelDT(r.HFD_REAL),
+    HFD_LIMITE: fmtExcelDT(r.HFD_LIMITE),
+    X_FIN: fmtExcelDT(r.X_FIN),
+    DIA_OP: r.DIA_OP || '',
+    NIVEL_OCA: r.NIVEL_OCA ?? '',
+    PORC_OCUP: r.PORC_OCUP ?? 0,
+    LIBRES: r.LIBRES ?? 0,
+    TIENE_TRASLADO: r.TIENE_TRASLADO ? 'SI' : 'NO',
+    CF_TRASLADO: r.CF_TRASLADO || '',
+    FECHA_TRASLADO_DT: fmtExcelDT(r.FECHA_TRASLADO_DT),
+    HORA_TRASLADO: r.HORA_TRASLADO || '',
+    GRUPO: r.GRUPO || '',
+    SIMULADO_HID_DT: fmtExcelDT(r.HID_DT),
+    SIMULADO_LINEAS_R: r.LINEAS_R || 0,
+    SIMULADO_TPDC: r.TPDC || 0,
+    SIMULADO_OCA: r.OCA || ''
+  }));
+  ultimoMetaExcel = {
+    fechaInicio: document.getElementById('fecha-inicio').value || '',
+    fechaFin: document.getElementById('fecha-fin').value || '',
+    ocas: getOcasSeleccionadas(),
+  };
+
   Plotly.newPlot('grafico-maestro',traces,{
     paper_bgcolor:'#f4f6f8',plot_bgcolor:'#eef2f5',height:chartH,barmode:'overlay',bargap:barGap,margin:{l:10,r:20,t:50,b:50},
     xaxis:{type:'date',autorange:false,range:[new Date(xMin-xPad),new Date(xMax+xPad)],tickformat:'%H:%M<br>%a %d %b',side:'top',gridcolor:'rgba(255,255,255,.07)',color:'#111111',tickfont:{color:'#111111'},linecolor:'rgba(255,255,255,.2)',showline:true},
@@ -1190,8 +1391,7 @@ function cargarPlanVuelos(){
   thead.innerHTML = `<tr>
     <th class="th-fija" style="position:sticky;left:0;background:#0f2040;">F. Reserva</th>
     <th class="th-fija">Estación</th>
-    <th class="th-fija">Vuelo</th>
-    <th class="th-fija">Matrícula/OTA</th>
+    <th class="th-fija">ID Vuelo<br>Matrícula</th>
     <th class="th-fija" style="text-align:right;">FBE</th>
     ${dias.map(d=>{
       const dEn=d.toLocaleDateString('en-US',{weekday:'short'});
@@ -1237,19 +1437,11 @@ function cargarPlanVuelos(){
     // Badge de estación
     const estBadgeCls = v.ORIGEN === 'BOG' ? 'est-bog' : (v.ORIGEN === 'MDE' ? 'est-mde' : (v.ORIGEN === 'UIO' ? 'est-uio' : 'est-otro'));
     
-    // ========== CONCATENAR MATRICULA y OTA_ID ==========
+    // Columna compacta: ID vuelo arriba y matrícula debajo
+    const idVuelo = (v.ID_VUELO && v.ID_VUELO.trim()) ? v.ID_VUELO.trim() : '—';
     const matricula = (v.MATRICULA && v.MATRICULA !== '—' && v.MATRICULA !== 'nan') ? v.MATRICULA : '';
-    const otaId = (v.OTA_ID && v.OTA_ID !== '') ? v.OTA_ID : '';
-    let matDisplay = '';
-    if(matricula && otaId) {
-      matDisplay = `${matricula} / ${otaId}`;
-    } else if(matricula) {
-      matDisplay = matricula;
-    } else if(otaId) {
-      matDisplay = otaId;
-    } else {
-      matDisplay = '—';
-    }
+    const otaId = (v.OTA_ID && v.OTA_ID.trim()) ? v.OTA_ID.trim() : '';
+    const matDisplay = [matricula, otaId].filter(Boolean).join(' / ') || '—';
 
     // Celdas por cada fecha de ETD/ATD
     const celdasDias = dias.map(d => {
@@ -1278,9 +1470,9 @@ function cargarPlanVuelos(){
             cls = 'c-atd-late'; 
             icon = '🔴'; 
           } else if(diffMin < -5) { 
-            icon = '✅'; 
+            icon = '🛫'; 
           } else { 
-            icon = '✅'; 
+            icon = '🛫'; 
           }
         }
         
@@ -1292,7 +1484,7 @@ function cargarPlanVuelos(){
         const horaETD = fmtHM(etdDate);
         const esPasado = etdDate < ahora;
         const cls = esPasado ? 'c-etd-late' : 'c-etd-ok';
-        const icon = esPasado ? '⚠️' : '🕐';
+        const icon = esPasado ? '⚠️' : '🛬';
         return `<td class="${cls}" style="text-align:center;white-space:nowrap;">${icon} ${horaETD}<\/td>`;
       }
       
@@ -1302,8 +1494,12 @@ function cargarPlanVuelos(){
     tr.innerHTML = `
       ${cFecha}
       <td style="text-align:center;"><span class="est-badge ${estBadgeCls}">${v.ORIGEN}</span><\/td>
-      <td style="font-weight:700;">${v.ID_VUELO}<\/td>
-      <td style="font-size:11px;">${matDisplay}<\/td>
+      <td>
+        <div class="id-mat-cell">
+          <span class="id-vuelo-linea">${idVuelo}</span>
+          <span class="matricula-linea">${matDisplay}</span>
+        </div>
+      <\/td>
       <td style="text-align:right;">${Math.round(v.FBE).toLocaleString('es-CO')}<\/td>
       ${celdasDias.join('')}
     `;
@@ -1324,324 +1520,163 @@ function normalizarCallsign(id) {
     return limpio;
 }
 // ═══════════════════════════════════════════
-//  MAPA EN TIEMPO REAL — ADS-B
+//  MAPA EN TIEMPO REAL — FLIGHT AWARE (VERSIÓN LIMPIA)
 // ═══════════════════════════════════════════
-let mapaPlanVuelos       = null;
-let markersAviones       = [];
-let intervaloMapa        = null;
-let ultimaActualizacionMapa = 0;
-let vuelosPlanVisibles   = [];
-const adsbUrlCache       = new Map();
-const BBOX = { lamin:-5, lomin:-82, lamax:13, lomax:-60 };
+let mapaPlanVuelos = null;
+let markersAviones = [];
+let rutasMapa = [];
+let ultimosVuelosMapa = null;
 
-const sleep = (ms)=>new Promise(r=>setTimeout(r, ms));
-
-// ── 2. FETCH A ADSB.FI ───────────────────────────────────────────────
-async function fetchAdsbFi() {
-  const TARGET_BBOX = `https://opendata.adsb.fi/api/v2/boundingbox?lamax=${BBOX.lamax}&lamin=${BBOX.lamin}&lomax=${BBOX.lomax}&lomin=${BBOX.lomin}`;
-  const TARGET_LOL  = `https://api.adsb.lol/v2/lat/4.6/lon/-74.1/dist/600`;
-
-  // ✅ CAMBIAR corsproxy.io POR allorigins
-  const intentos = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_BBOX)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_LOL)}`,
-  ];
-
-  for (const url of intentos) {
-    try {
-      console.log('📡 Probando:', url.slice(0,70)+'...');
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      const data = await response.json();
-      const ac = data.ac || data.aircraft || [];
-      
-      if (ac.length > 0) {
-        console.log(`✅ OK — ${ac.length} vuelos`);
-        return ac;
-      }
-    } catch(e) {
-      console.warn('   ❌', e.message);
-    }
-  }
-  return [];
-}
-async function fetchAcFromUrls(urls) {
-  for (const url of urls) {
-    try {
-      const cached = adsbUrlCache.get(url);
-      if (cached && (Date.now() - cached.ts) < 60000) {
-        if (cached.ac.length) return cached.ac;
-        continue;
-      }
-
-      const ctrl = new AbortController();
-      const tid  = setTimeout(() => ctrl.abort(), 10000);
-      const res  = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(tid);
-      if (!res.ok) {
-        adsbUrlCache.set(url, { ts: Date.now(), ac: [] });
-        continue;
-      }
-      const txt = await res.text();
-      if (!txt || txt.trim().startsWith('<')) {
-        adsbUrlCache.set(url, { ts: Date.now(), ac: [] });
-        continue;
-      }
-      const data = JSON.parse(txt);
-      const ac = data.ac || data.aircraft || [];
-      adsbUrlCache.set(url, { ts: Date.now(), ac });
-      if (ac.length) return ac;
-    } catch(_) {
-      // Intentar siguiente URL
-    }
-  }
-  return [];
-}
-
-async function fetchAdsbByIds(matriculas) {
-  const encontrados = [];
-  const vistos = new Set();
-
-  const agregar = (arr)=>{
-    arr.forEach(ac=>{
-      const k = String(ac.hex || `${ac.r || ''}-${ac.flight || ''}`).toUpperCase();
-      if (!k || vistos.has(k)) return;
-      vistos.add(k);
-      encontrados.push(ac);
-    });
-  };
-
-  // SOLO buscar por matrícula
-  for (const mat of matriculas.slice(0, 15)) { // Aumentado a 15 pero con mejor espaciado
-    if (!mat || mat.length < 4) continue;
-    const id = encodeURIComponent(mat);
-    const ac = await fetchAcFromUrls([
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.adsb.lol/v2/registration/${id}`)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://opendata.adsb.fi/api/v2/registration/${id}`)}`,
-    ]);
-    if (ac.length) agregar(ac);
-    await sleep(800); // Pausa más larga para evitar 429
-  }
-
-  return encontrados;
-}
-
-// ── 3. FILTRAR COINCIDENCIAS ─────────────────────────────────────────
-function filtrarCoincidencias(todos, ids) {
-  if (!ids.length) return todos.filter(ac => ac.lat != null && ac.lon != null);
-
-  const norm = ids.map(id => String(id).toUpperCase().replace(/[^A-Z0-9]/g,'')).filter(id=>id.length>=4);
-
-  return todos.filter(ac => {
-    const cs  = (ac.flight||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    const hex = (ac.hex   ||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    const reg = (ac.r     ||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    return norm.some(id => {
-      return [cs, reg, hex].some(v => v && (v === id || v.includes(id) || id.includes(v)));
-    });
-  }).filter(ac => ac.lat != null && ac.lon != null);
-}
-
-// ── 4. CONVERTIR FORMATO ─────────────────────────────────────────────
-function mapAc(ac) {
-  return {
-    icao24  : (ac.hex   ||'').toUpperCase(),
-    callsign: (ac.flight||ac.hex||'').toUpperCase().trim(),
-    reg     : (ac.r     ||'').toUpperCase(),
-    lat     : ac.lat, lon: ac.lon,
-    alt     : ac.alt_baro === 'ground' ? 0 : (parseFloat(ac.alt_baro)||0),
-    tierra  : ac.alt_baro === 'ground' || (ac.gs!=null && ac.gs < 30),
-    vel     : ac.gs    || 0,
-    heading : ac.track || 0,
-  };
-}
-
-function fallbackPosByOrigen(origen) {
-  const o = String(origen || '').toUpperCase();
-  if (o === 'MDE') return { lat: 6.1645, lon: -75.4231 };
-  if (o === 'UIO') return { lat: -0.1292, lon: -78.3575 };
-  return { lat: 4.7016, lon: -74.1469 }; // BOG por defecto
-}
-
-function simpleHash(str) {
-  let h = 0;
-  const s = String(str || '');
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
-  return Math.abs(h);
-}
-
-function generarFallbackDesdeFiltro() {
-  const src = (vuelosPlanVisibles || []).filter(v => v && (v.MATRICULA || v.OTA_ID));
-  if (!src.length) return [];
-  return src.slice(0, 30).map(v => {
-    const base = fallbackPosByOrigen(v.ORIGEN);
-    const key = `${v.MATRICULA || ''}-${v.OTA_ID || ''}-${v.ID_VUELO || ''}`;
-    const h = simpleHash(key);
-    const dLat = ((h % 100) / 1000) - 0.05;
-    const dLon = (((Math.floor(h / 100) % 100) / 1000) - 0.05);
-    return {
-      icao24: (v.OTA_ID || key || 'SIM').toUpperCase(),
-      callsign: (v.OTA_ID || v.ID_VUELO || 'SIM').toUpperCase(),
-      reg: (v.MATRICULA || 'N/A').toUpperCase(),
-      lat: base.lat + dLat,
-      lon: base.lon + dLon,
-      alt: 0,
-      tierra: true,
-      vel: 0,
-      heading: 0,
-    };
-  });
-}
-
-// ── 5. PINTAR MARCADORES ─────────────────────────────────────────────
-function pintarMarcadores(vuelos) {
-  markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
-  markersAviones = [];
-
-  if (!vuelos.length) {
-    showToast('⚠️ Sin vuelos ADS-B en la región ahora mismo','#e74c3c');
-    return;
-  }
-
-  const bounds = [];
-  vuelos.forEach(v => {
-    const icon = L.divIcon({
-      html:`<div style="transform:rotate(${v.heading}deg);font-size:22px;line-height:1;filter:drop-shadow(0 0 4px rgba(240,180,41,.8));">${v.tierra?'🛬':'✈️'}</div>`,
-      iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16], className:''
-    });
-    const popup = `
-      <div style="font-family:monospace;font-size:13px;min-width:180px;">
-        <b>✈️ ${v.callsign||v.icao24}</b><br>
-        <span style="color:#888;">Matrícula:</span> ${v.reg||'—'}<br>
-        <span style="color:#888;">ICAO24:</span> ${v.icao24}<br>
-        <span style="color:#888;">Estado:</span> ${v.tierra?'🅿️ En tierra':'🔵 En vuelo'}<br>
-        <span style="color:#888;">Altitud:</span> ${Math.round(v.alt)||'—'} ft<br>
-        <span style="color:#888;">Velocidad:</span> ${Math.round(v.vel)} kt<br>
-        <span style="color:#888;">Rumbo:</span> ${Math.round(v.heading)}°
-      </div>`;
-    const m = L.marker([v.lat,v.lon],{icon}).bindPopup(popup).addTo(mapaPlanVuelos);
-    markersAviones.push(m);
-    bounds.push([v.lat,v.lon]);
-  });
-
-  if (bounds.length) mapaPlanVuelos.fitBounds(bounds,{padding:[40,40],maxZoom:8});
-  console.log(`✅ Mapa: ${vuelos.length} avión(es) pintados`);
-}
-
-// ── 6. ACTUALIZAR MAPA (función principal) ───────────────────────────
-async function actualizarMapaAviones(force = false) {
-  if (!mapaPlanVuelos) return;
-
-  const ahora = Date.now();
-  if (!force && (ahora - ultimaActualizacionMapa < 20000)) return;
-  ultimaActualizacionMapa = ahora;
-
-  const ids = getIdsDelDia();
-
-  // Solo búsqueda por matrícula
-  let encontrados = await fetchAdsbByIds(ids.matriculas);
-  console.log(`🎯 Búsqueda por matrícula: ${encontrados.length} coincidencias`);
-
-  if (!encontrados.length) {
-      const fallback = generarFallbackDesdeFiltro();
-      if (fallback.length) {
-          console.warn('⚠️ No se encontraron vuelos ADS-B. Mostrando posiciones desde la tabla.');
-          pintarMarcadores(fallback);
-          showToast('⚠️ Mostrando posiciones desde el plan de vuelos','#f0b429');
-          return;
-      }
-      showToast('⚠️ No hay vuelos activos para tus matrículas','#e74c3c');
-      return;
-  }
-
-  pintarMarcadores(encontrados.map(mapAc));
-}
-
-// ── 7. INICIALIZAR MAPA ──────────────────────────────────────────────
 function inicializarMapaPlanVuelos() {
   const container = document.getElementById('mapa-container-plan');
   if (!container) return;
-
   container.innerHTML = '<div id="mapa-leaflet-plan" style="width:100%;height:100%;border-radius:8px;"></div>';
-
-  if (mapaPlanVuelos) { mapaPlanVuelos.remove(); mapaPlanVuelos = null; }
-
-  mapaPlanVuelos = L.map('mapa-leaflet-plan').setView([4.6,-74.1],5);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    attribution:'&copy; OSM &copy; CartoDB', subdomains:'abcd', maxZoom:18
+  if (mapaPlanVuelos) mapaPlanVuelos.remove();
+  mapaPlanVuelos = L.map('mapa-leaflet-plan').setView([4.6, -74.1], 5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OSM &copy; CartoDB',
+    subdomains: 'abcd',
+    maxZoom: 18
   }).addTo(mapaPlanVuelos);
-
-  // Forzar carga inicial al presionar "Cargar Mapa"
-  ultimaActualizacionMapa = 0;
-  actualizarMapaAviones(true);
-
-  if (intervaloMapa) clearInterval(intervaloMapa);
-  intervaloMapa = setInterval(()=>{
-    if (document.getElementById('modal-plan-vuelos')?.classList.contains('open'))
-      actualizarMapaAviones();
-  }, 30000);
+  if (ultimosVuelosMapa && ultimosVuelosMapa.length) {
+    pintarMarcadores(ultimosVuelosMapa);
+  } else {
+    mostrarMensajeMapa('Presione "Cargar Mapa" para ver posiciones en vivo');
+  }
 }
 
-// ── 8. CERRAR ────────────────────────────────────────────────────────
-function cerrarPlanVuelos() {
-  if (intervaloMapa) { clearInterval(intervaloMapa); intervaloMapa = null; }
-  document.getElementById('modal-plan-vuelos').classList.remove('open');
+function mostrarLoadingMapa(container) {
+  if (!container) return;
+  container.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+    <div class="spinner" style="width:40px;height:40px;"></div>
+    <p style="margin-top:10px;">Consultando posiciones de vuelo...</p>
+  </div>`;
 }
 
 function mostrarMensajeMapa(msg) {
   const c = document.getElementById('mapa-container-plan');
   if (!c) return;
-  c.innerHTML=`<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;"><span style="font-size:48px;">🗺️</span><p style="margin-top:10px;color:#8faac5;">${msg}</p></div>`;
+  c.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;">
+    <span style="font-size:48px;">🗺️</span>
+    <p style="margin-top:10px;color:#8faac5;">${msg}</p>
+  </div>`;
 }
 
-async function debugAdsb() {
-  const todos = await fetchAdsbFi();
-  const ids   = getIdsDelDia();
-  const directos = await fetchAdsbByIds(ids.matriculas, ids.otaIds);
-  
-  console.log('════ IDs QUE BUSCO ════');
-  console.log('MATRÍCULAS:', ids.matriculas);
-  console.log('OTA_ID plan B:', ids.otaIds);
-  console.log('COINCIDENCIAS DIRECTAS IDs:', directos.length);
-  
-  console.log('════ LO QUE DEVUELVE ADSB (primeros 30) ════');
-  console.table(todos.slice(0,30).map(ac=>({
-    flight : (ac.flight||'').trim(),
-    hex    : ac.hex,
-    reg    : ac.r,
-    lat    : ac.lat,
-    lon    : ac.lon
-  })));
-
-  // Buscar si alguna matrícula de mis vuelos aparece en cualquier campo
-  const matriculas = ids.matriculas;
-  console.log('════ BÚSQUEDA MANUAL ════');
-  matriculas.forEach(mat => {
-    const encontrado = todos.find(ac =>
-      (ac.flight||'').toUpperCase().includes(mat) ||
-      (ac.hex   ||'').toUpperCase().includes(mat) ||
-      (ac.r     ||'').toUpperCase().includes(mat)
-    );
-    console.log(`${mat} → ${encontrado ? `✅ ENCONTRADO: flight=${(encontrado.flight||'').trim()} reg=${encontrado.r||''}` : '❌ NO encontrado'}`);
-  });
-}
 function getIdsDelDia() {
   const matsUnicas = new Set();
-
+  const otasUnicas = new Set();
   (vuelosPlanVisibles || []).forEach(v => {
-    const mat = String(v.MATRICULA || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const mat = String(v.MATRICULA || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (mat && mat !== 'NAN' && mat !== '—' && mat.length >= 4) {
       matsUnicas.add(mat);
+    } else {
+      const ota = String(v.OTA_ID || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (ota && ota.length >= 4) otasUnicas.add(ota);
     }
   });
+  return { matriculas: [...matsUnicas], otaIds: [...otasUnicas] };
+}
 
-  console.log(`🛩️ Matrículas del filtro (${matsUnicas.size}):`, [...matsUnicas]);
+async function actualizarMapaAviones(forzar = false) {
+  if (!mapaPlanVuelos) return;
+  if (!forzar && ultimosVuelosMapa && ultimosVuelosMapa.length) {
+    pintarMarcadores(ultimosVuelosMapa);
+    showToast('🗺️ Mostrando datos anteriores (no actualizados)', '#f0b429');
+    return;
+  }
+  const ids = getIdsDelDia();
+  const todosIds = [...ids.matriculas, ...ids.otaIds];
+  if (!todosIds.length) {
+    mostrarMensajeMapa('No hay matrículas ni OTA_ID para rastrear');
+    return;
+  }
+  const container = document.getElementById('mapa-container-plan');
+  mostrarLoadingMapa(container);
+  const url = `${PROXY_BASE}/api/flights/live?ids=${todosIds.join(',')}`;
+  console.log('✈️ Consultando FlightAware:', url);
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    const vuelos = data.vuelos || [];
+    if (!vuelos.length) {
+      showToast('⚠️ No se encontraron vuelos activos', '#f0b429');
+      markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
+      markersAviones = [];
+      rutasMapa.forEach(r => mapaPlanVuelos.removeLayer(r));
+      rutasMapa = [];
+      ultimosVuelosMapa = null;
+      mostrarMensajeMapa('No hay vuelos activos ahora');
+      return;
+    }
+    const aviones = vuelos.map(v => ({
+      icao24: v.reg || v.ident,
+      callsign: v.callsign,
+      reg: v.reg,
+      lat: v.lat,
+      lon: v.lon,
+      alt: v.alt || 0,
+      tierra: v.tierra,
+      vel: v.vel || 0,
+      heading: v.heading || 0,
+      origen: v.origen || '',
+      destino: v.destino || ''
+    }));
+    ultimosVuelosMapa = aviones;
+    pintarMarcadores(aviones);
+    showToast(`✅ ${aviones.length} vuelos actualizados`, '#27ae60');
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error al obtener posiciones. Intenta de nuevo.', '#e74c3c');
+    if (ultimosVuelosMapa && ultimosVuelosMapa.length) {
+      pintarMarcadores(ultimosVuelosMapa);
+      showToast('⚠️ Mostrando datos anteriores', '#f0b429');
+    }
+  }
+}
 
-  return {
-    matriculas: [...matsUnicas].slice(0, 15),
-    otaIds: [] // Vacío, no usamos OTA_ID
-  };
+function pintarMarcadores(vuelos) {
+  markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
+  markersAviones = [];
+  rutasMapa.forEach(r => mapaPlanVuelos.removeLayer(r));
+  rutasMapa = [];
+  if (!vuelos.length) return;
+  const bounds = [];
+  vuelos.forEach(v => {
+    const icon = L.divIcon({
+      html: `<div style="transform:rotate(${v.heading}deg);font-size:22px;line-height:1;filter:drop-shadow(0 0 4px rgba(240,180,41,.8));">${v.tierra ? '🛬' : '✈️'}</div>`,
+      iconSize: [28,28], iconAnchor:[14,14], popupAnchor:[0,-16], className:''
+    });
+    const popup = `<div style="font-family:monospace;font-size:13px;min-width:220px;">
+      <b style="color:#f0b429;">✈️ ${v.callsign || v.icao24}</b><hr style="margin:4px 0; border-color:#333;">
+      <span style="color:#888;">Matrícula:</span> ${v.reg || 'N/A'}<br>
+      <span style="color:#888;">Origen:</span> ${v.origen || 'N/A'}<br>
+      <span style="color:#888;">Destino:</span> ${v.destino || 'N/A'}<br>
+      <span style="color:#888;">Altitud:</span> ${Math.round(v.alt)} ft<br>
+      <span style="color:#888;">Velocidad:</span> ${Math.round(v.vel)} kt<br>
+      <span style="color:#888;">Rumbo:</span> ${Math.round(v.heading)}°<br>
+      <span style="color:#888;">Estado:</span> ${v.tierra ? '🅿️ En tierra' : '✈️ En vuelo'}<br>
+      <span style="color:#888;">Última act.:</span> ${new Date().toLocaleTimeString()}
+    </div>`;
+    const marker = L.marker([v.lat, v.lon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
+    markersAviones.push(marker);
+    bounds.push([v.lat, v.lon]);
+    if (v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
+      const start = AEROPUERTOS[v.origen];
+      const end   = AEROPUERTOS[v.destino];
+      const ruta = L.polyline([[start.lat, start.lon], [end.lat, end.lon]], {
+        color: '#f0b429', weight: 2, opacity: 0.5, dashArray: '5, 8'
+      }).addTo(mapaPlanVuelos);
+      rutasMapa.push(ruta);
+    }
+  });
+  if (bounds.length) mapaPlanVuelos.fitBounds(bounds, { padding: [40,40], maxZoom:8 });
+  console.log(`✅ Mapa: ${vuelos.length} aviones, ${rutasMapa.length} rutas`);
+}
+
+// Función auxiliar para el botón (no usada directamente, pero se puede llamar si quieres)
+function cargarYActualizarMapa() {
+  if (!mapaPlanVuelos) inicializarMapaPlanVuelos();
+  actualizarMapaAviones(true);
 }
 
 // ═══════════════════════════════════════════
