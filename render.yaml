@@ -26,8 +26,6 @@ services:
     # Salud del servicio
     healthCheckPath: /api/flights/ping
     
-    # Hook de deploy (opcional)
-    preDeployCommand: npm ci
 
 # Instrucciones:
 # 1. Conecta tu repo de GitHub a Render: https://render.com
