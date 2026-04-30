@@ -1,0 +1,47 @@
+name: Deploy Backend to Render
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'flight-proxy/**'
+      - 'render.yaml'
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Render via webhook
+        run: |
+          if [ ! -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          else
+            echo "Warning: RENDER_DEPLOY_HOOK secret not configured"
+            echo "To enable automatic backend deployment:"
+            echo "1. Create a service on Render.com using render.yaml"
+            echo "2. Copy the Deploy Hook URL"
+            echo "3. Add it as RENDER_DEPLOY_HOOK secret in GitHub"
+          fi
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Build and Upload to Pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: 'docs/'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

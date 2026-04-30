@@ -33,13 +33,37 @@ export class FlightsService {
     return key;
   }
 
+  // Health check para diagnosticar problemas
+  getHealthCheck() {
+    return {
+      apiKeysLoaded: this.apiKeys.length,
+      apiKeysStatus: this.apiKeys.map((k, i) => ({
+        index: i + 1,
+        loaded: !!k,
+        status: k && k.length > 10 ? '✅ válida' : '❌ falta configurar'
+      })),
+      mensaje: this.apiKeys.length === 0 
+        ? '🔴 CRÍTICO: No hay API keys. Configura FLIGHT_AWARE_KEY_1 y FLIGHT_AWARE_KEY_2 en .env'
+        : this.apiKeys.length === 1
+        ? '⚠️ Una API key disponible'
+        : '✅ Dos API keys disponibles'
+    };
+  }
+
   // Llamada a FlightAware con reintento automático si una key falla por límite
   private async callFlightAware(url: string, keyIndex: number = 0): Promise<any> {
     if (keyIndex >= this.apiKeys.length) {
-      throw new Error('Todas las API keys de FlightAware fallaron');
+      const err = new Error('🔴 TODAS LAS API KEYS FALLARON: Sin claves válidas o límites excedidos');
+      console.error(err.message);
+      throw err;
     }
 
     const apiKey = this.apiKeys[keyIndex];
+    if (!apiKey) {
+      console.error(`⚠️ API Key ${keyIndex + 1}/2 está vacía - verifica .env`);
+      return this.callFlightAware(url, keyIndex + 1);
+    }
+
     try {
       const response = await firstValueFrom(
         this.httpService.get(url, {
@@ -55,8 +79,11 @@ export class FlightsService {
       return response.data;
     } catch (err: any) {
       const status = err.response?.status;
+      const msgError = err.response?.data?.error?.message || err.message || 'Unknown error';
+      console.error(`❌ API key ${keyIndex + 1} falló [${status}]: ${msgError}`);
+      
       if (status === 429 || status === 403) {
-        console.warn(`⚠️ API key ${keyIndex + 1} falló (${status}). Cambiando a la siguiente.`);
+        console.warn(`   → Intentando siguiente clave...`);
         return this.callFlightAware(url, keyIndex + 1);
       }
       throw err;
@@ -70,10 +97,22 @@ export class FlightsService {
       const data = await this.callFlightAware(url);
 
       const vuelos: any[] = data.flights || [];
-      if (!vuelos.length) return null;
+      if (!vuelos.length) {
+        console.warn(`⚠️ No hay vuelos encontrados para ${ident}`);
+        return null;
+      }
 
       const activo = vuelos.find((f) => f.last_position) || vuelos[0];
+      if (!activo) {
+        console.warn(`⚠️ FlightAware: ${ident} sin posición`, { vuelos });
+        return null;
+      }
+
       const pos = activo.last_position;
+      if (!pos) {
+        console.warn(`⚠️ ${ident} sin last_position. Estado: ${activo.status}`);
+        return null;
+      }
 
       return {
         ident,
@@ -91,24 +130,43 @@ export class FlightsService {
         timestamp: pos?.timestamp || null,
       };
     } catch (err: any) {
-      console.error(`❌ FlightAware [${ident}] → ${err.message}`);
+      console.error(`❌ FlightAware [${ident}] → ${err.message}`, err.response?.status, err.response?.data);
       return null;
     }
   }
 
   // ── Buscar múltiples en paralelo (respetando límite de la API free) ──
   async getLiveMultiple(ids: string[]) {
-    const CHUNK = 5; // FlightAware recomienda no más de 5 en paralelo en plan gratis
-    const resultados: any[] = [];
+    if (!ids || ids.length === 0) {
+      console.warn('⚠️ getLiveMultiple: Lista de IDs vacía');
+      return [];
+    }
 
-    for (let i = 0; i < ids.length; i += CHUNK) {
-      const grupo = ids.slice(i, i + CHUNK);
-      const lote = await Promise.all(grupo.map((id) => this.getVueloActivo(id)));
-      resultados.push(...lote.filter(Boolean));
-      if (i + CHUNK < ids.length) {
-        await new Promise((r) => setTimeout(r, 500)); // pausa entre lotes
+    console.log(`🔍 Buscando ${Math.min(ids.length, 5)} vuelos...`);
+    const resultados = [];
+    const errores: string[] = [];
+
+    for (const id of ids.slice(0, 5)) {
+      try {
+        const vuelo = await this.getVueloActivo(id);
+        if (vuelo) {
+          resultados.push(vuelo);
+          console.log(`✅ ${id} encontrado`);
+        } else {
+          console.warn(`⚠️ ${id} no tiene datos activos`);
+          errores.push(`${id}: sin datos`);
+        }
+      } catch (e: any) {
+        console.error(`❌ Error con ${id}: ${e.message}`);
+        errores.push(`${id}: ${e.message}`);
       }
     }
+
+    if (errores.length > 0) {
+      console.warn(`⚠️ Errores durante búsqueda:`, errores);
+    }
+
+    console.log(`📊 Resultados: ${resultados.length} vuelos encontrados de ${Math.min(ids.length, 5)} solicitados`);
     return resultados;
   }
 

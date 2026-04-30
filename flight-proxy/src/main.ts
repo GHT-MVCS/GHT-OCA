@@ -1,18 +1,28 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
-  // 👇 HABILITAR CORS PARA DESARROLLO
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const port = process.env.PORT || 3000;
+
+  // Configuración CORS más precisa
   app.enableCors({
-    origin: true,   // Permite cualquier origen (útil para Codespaces)
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: false,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
-  
-  await app.listen(process.env.PORT ?? 3000);
-  console.log('🚀 Servidor corriendo en http://localhost:3000');
+
+  // Servir index.html y archivos estáticos desde la raíz del proyecto
+  app.useStaticAssets(join(__dirname, '..', '..', '..'), {
+    index: ['index.html'],
+  });
+
+  await app.listen(port);
+  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+  console.log(`📁 Sirviendo archivos estáticos desde: ${join(__dirname, '..', '..', '..')}`);
 }
 bootstrap();

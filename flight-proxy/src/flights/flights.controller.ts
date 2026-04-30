@@ -8,16 +8,38 @@ export class FlightsController {
   // GET /api/flights/live?ids=N319CM,N334QT,XAARU,N307UP
   @Get('live')
   async getLive(@Query('ids') ids: string) {
+    console.log(`📥 /api/flights/live?ids=${ids}`);
+    
     const lista = (ids || '')
       .split(',')
       .map(s => s.trim().toUpperCase())
       .filter(s => s.length >= 4)
       .slice(0, 20); // máximo 20
 
-    if (!lista.length) return { vuelos: [], error: 'Sin IDs' };
+    if (!lista.length) {
+      return { 
+        vuelos: [], 
+        error: 'Sin IDs válidas',
+        mensaje: '⚠️ No se encontraron IDs válidas (mínimo 4 caracteres)'
+      };
+    }
 
-    const vuelos = await this.flightsService.getLiveMultiple(lista);
-    return { vuelos, total: vuelos.length };
+    try {
+      const vuelos = await this.flightsService.getLiveMultiple(lista);
+      return { 
+        vuelos, 
+        total: vuelos.length,
+        idsProcessadas: lista.length,
+        mensaje: `✅ ${vuelos.length}/${lista.length} vuelos encontrados`
+      };
+    } catch (error: any) {
+      console.error('❌ Error en /api/flights/live:', error.message);
+      return { 
+        vuelos: [],
+        error: error.message,
+        mensaje: '❌ Error al obtener posiciones de FlightAware'
+      };
+    }
   }
 
   // GET /api/flights/one?id=N319CM
@@ -36,6 +58,11 @@ export class FlightsController {
   // GET /api/flights/ping  (health check)
   @Get('ping')
   ping() {
-    return { ok: true, ts: new Date().toISOString() };
+    const config = this.flightsService.getHealthCheck();
+    return { 
+      ok: true, 
+      ts: new Date().toISOString(),
+      ...config
+    };
   }
 }
