@@ -65,4 +65,11 @@ export class FlightsController {
       ...config
     };
   }
+  @Get('debug')
+  async getDebug(@Query('id') id: string) {
+    if (!id) return { error: 'Falta ?id=MATRICULA' };
+    const url = `${this.flightsService['BASE_URL']}/flights/${encodeURIComponent(id.trim().toUpperCase())}`;
+    const data = await this.flightsService['callFlightAware'](url);
+    return data;
+  }
 }
