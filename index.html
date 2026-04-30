@@ -540,7 +540,7 @@
           <div class="panel-item" style="font-size:13px;"><span>🕐 ETD pend.:</span><b id="pv-etd" style="color:#3498db;">0</b></div>
           <div class="panel-item" style="font-size:13px;"><span>❌ Tarde:</span><b id="pv-tarde" style="color:#e74c3c;">0</b></div>
         </div>
-        <button class="close-btn" data-close-plan-vuelos="1" type="button">×</button>
+        <button class="close-btn" data-close-plan-vuelos="1" type="button" onclick="cerrarPlanVuelos()">×</button>
       </div>
     </div>
 
@@ -588,7 +588,7 @@
     </div>
 
     <div class="modal-footer" style="flex-shrink:0;align-items:center;">
-      <button class="btn btn-gold" data-close-plan-vuelos="1" type="button">Cerrar</button>
+      <button class="btn btn-gold" data-close-plan-vuelos="1" type="button" onclick="cerrarPlanVuelos()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1389,6 +1389,8 @@ function abrirPlanVuelos(){
   document.getElementById('pv-fecha-inicio').value=toInputDate(ayer);
   document.getElementById('pv-fecha-fin').value=toInputDate(manana);
   cargarPlanVuelos();
+  // Asegurar que los handlers de cierre estén asignados al abrir (evita roturas si el DOM cambió)
+  bindPlanVuelosCloseHandlers();
 }
 function cerrarPlanVuelos(){
   if (intervaloMapa) {
@@ -1671,7 +1673,7 @@ function getIdsDelDia() {
   });
   return { matriculas: [...matsUnicas], otaIds: [...otasUnicas] };
 }
-
+const BACKEND_URL = 'https://ght-oca-backend-37dx.onrender.com';
 async function actualizarMapaAviones(forzar = false) {
   if (!mapaPlanVuelos) return;
   if (!forzar && ultimosVuelosMapa && ultimosVuelosMapa.length) {
