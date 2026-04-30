@@ -597,6 +597,8 @@
 //  CONFIG
 // ═══════════════════════════════════════════
 const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQeRe5r5Hfk7b3GNrid62SYsGK-YZuXrMXGHc9qR6TcKzB4a__POp_vc1nlhCHse-4prvgAegWxcIac/pub?gid=0&single=true&output=csv";
+const RENDER_BACKEND = 'https://ght-oca-backend-37dx.onrender.com';
+
 const PROXY_BASE = (() => {
   const { protocol, hostname, port } = window.location;
   // GitHub Pages → expect Render backend
@@ -619,6 +621,8 @@ const ES_GITHUB_PAGES = window.location.hostname.includes('github.io');
 
 function getProxyBases() {
   const bases = [];
+  // Siempre intentar primero el backend en Render (nuestro despliegue)
+  bases.push(RENDER_BACKEND);
   const params = new URLSearchParams(window.location.search);
   const override = params.get('proxy') || localStorage.getItem('proxy-base');
   if (override) bases.push(override.replace(/\/$/, ''));
