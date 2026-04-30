@@ -574,7 +574,7 @@
         
         <!-- COLUMNA DERECHA: MAPA -->
         <div class="col-mapa">
-          <h4>🗺️ UBICACIÓN EN TIEMPO REAl</h4>
+          <h4>🗺️ UBICACIÓN EN TIEMPO REAL</h4>
           <div id="mapa-container-plan" style="flex:1;min-height:0;">
             <div class="placeholder-mapa" style="height:100%;">
               <span style="font-size:48px;">🗺️</span>
@@ -1670,6 +1670,22 @@ function inicializarMapaPlanVuelos() {
 
 function mostrarLoadingMapa(container) {
   if (!container) return;
+  // Si el mapa ya está inicializado, mostrarnos un overlay sobre el mapa en lugar de reemplazar el DOM
+  const mapEl = container.querySelector('#mapa-leaflet-plan');
+  if (mapEl) {
+    // evitar duplicados
+    let ov = container.querySelector('#mapa-overlay-loading');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'mapa-overlay-loading';
+      ov.style = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.45);z-index:9999;border-radius:8px;';
+      ov.innerHTML = `<div class="spinner" style="width:40px;height:40px;"></div><p style="margin-top:10px;color:#fff;">Consultando posiciones de vuelo...</p>`;
+      container.style.position = container.style.position || 'relative';
+      container.appendChild(ov);
+    }
+    return;
+  }
+  // Si no hay mapa todavía, reemplazar contenido como antes
   container.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">
     <div class="spinner" style="width:40px;height:40px;"></div>
     <p style="margin-top:10px;">Consultando posiciones de vuelo...</p>
@@ -1679,6 +1695,20 @@ function mostrarLoadingMapa(container) {
 function mostrarMensajeMapa(msg) {
   const c = document.getElementById('mapa-container-plan');
   if (!c) return;
+  const mapEl = c.querySelector('#mapa-leaflet-plan');
+  if (mapEl) {
+    // overlay message sobre el mapa
+    let ov = c.querySelector('#mapa-overlay-message');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'mapa-overlay-message';
+      ov.style = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;background:rgba(255,255,255,0.85);z-index:9998;border-radius:8px;';
+      c.style.position = c.style.position || 'relative';
+      c.appendChild(ov);
+    }
+    ov.innerHTML = `<span style="font-size:48px;">🗺️</span><p style="margin-top:10px;color:#8faac5;">${msg}</p>`;
+    return;
+  }
   c.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;">
     <span style="font-size:48px;">🗺️</span>
     <p style="margin-top:10px;color:#8faac5;">${msg}</p>
@@ -1819,6 +1849,13 @@ async function actualizarMapaAviones(forzar = false) {
 }
 
 function pintarMarcadores(vuelos) {
+  // remover overlays de carga/mensaje si existen
+  const container = document.getElementById('mapa-container-plan');
+  const ovLoad = container && container.querySelector && container.querySelector('#mapa-overlay-loading');
+  if (ovLoad) ovLoad.remove();
+  const ovMsg = container && container.querySelector && container.querySelector('#mapa-overlay-message');
+  if (ovMsg) ovMsg.remove();
+
   markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
   markersAviones = [];
   rutasMapa.forEach(r => mapaPlanVuelos.removeLayer(r));
