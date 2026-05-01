@@ -978,17 +978,26 @@ function calcularLimiteHFD(row) {
 //  CARGAR CSV
 // ═══════════════════════════════════════════
 async function cargarDatos() {
-  showLoading();
-  return Promise.race([
-    new Promise((res,rej)=>{
-      Papa.parse(URL_CSV,{
-        download:true, header:true,
-        complete(r){ dfGlobal=procesarDF(r.data.filter(x=>Object.values(x).some(v=>v))); hideLoading(); res(); },
-        error(e){ hideLoading(); rej(e); }
-      });
-    }),
-    new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout al cargar datos (15s)')), 15000))
-  ]);
+  return new Promise((res,rej)=>{
+    const timeoutId = setTimeout(()=>rej(new Error('Timeout descargando CSV (15s)')), 15000);
+    Papa.parse(URL_CSV,{
+      download:true, 
+      header:true,
+      complete(r){ 
+        clearTimeout(timeoutId);
+        try{
+          dfGlobal=procesarDF(r.data.filter(x=>Object.values(x).some(v=>v)));
+          res();
+        }catch(e){
+          rej(e);
+        }
+      },
+      error(e){ 
+        clearTimeout(timeoutId);
+        rej(e); 
+      }
+    });
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -2034,12 +2043,17 @@ async function init(){
   setupChartAutoResize();
   bindPlanVuelosCloseHandlers();
   document.getElementById('oca-checklist').addEventListener('change',()=>{ updateOtaDropdown(); renderChart(); });
+  showLoading();
   try{
-    await cargarDatos(); updateOtaDropdown(); renderChart();
+    await cargarDatos();
   }catch(e){
+    console.warn('⚠️ Error cargando datos:', e.message);
+    showToast('⚠️ No se pudieron cargar datos del CSV', '#f0b429');
+  }finally{
     hideLoading();
-    document.getElementById('grafico-maestro').innerHTML=`<div style="color:var(--red);padding:40px;font-size:18px;">❌ Error al cargar los datos.<br><small style="color:var(--text-dim)">${e.message||e}</small></div>`;
+    try { updateOtaDropdown(); renderChart(); } catch(e2) { console.warn('Error en renderizado:', e2); }
   }
+}
 }
 window.addEventListener('DOMContentLoaded',init);
 </script>
