@@ -1,4 +1,3 @@
-// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -8,7 +7,6 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const port = process.env.PORT || 3000;
 
-  // Configuración CORS más precisa
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -16,14 +14,13 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  // Servir index.html y archivos estáticos desde la raíz del proyecto (carpeta GHT-OCA)
-  // __dirname = .../flight-proxy/src -> join(__dirname, '..', '..') => /workspaces/GHT-OCA
+  // ← MOVER estáticos a una ruta que no choque con /api
   app.useStaticAssets(join(__dirname, '..', '..'), {
     index: ['index.html'],
+    prefix: '/static',   // ← ESTE ES EL CAMBIO CLAVE
   });
 
   await app.listen(port);
   console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
-  console.log(`📁 Sirviendo archivos estáticos desde: ${join(__dirname, '..', '..', '..')}`);
 }
 bootstrap();
