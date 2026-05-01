@@ -2017,7 +2017,11 @@ function pintarMarcadores(vuelos) {
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
 
-    const marker = L.marker([v.lat, v.lon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
+    // Offset para evitar que se superpongan marcadores en la misma coordenada
+    const yaEnEstePunto = bounds.filter(b => b[0] === v.lat && b[1] === v.lon).length;
+    const offsetLat = yaEnEstePunto * 0.18;
+    const offsetLon = yaEnEstePunto * 0.18;
+    const marker = L.marker([v.lat + offsetLat, v.lon + offsetLon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
     markersAviones.push(marker);
     bounds.push([v.lat, v.lon]);
 
