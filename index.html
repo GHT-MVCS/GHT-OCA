@@ -1971,27 +1971,26 @@ function pintarMarcadores(vuelos) {
         <div style="padding:6px 10px;border-radius:999px;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.35);font-size:12px;font-weight:700;color:#f0b429;">${progressLabel}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;">
-        <div><span style="color:#000;font-weight:700;">Estado</span><br><b style="color:#e9eef7;">${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}</b></div>
-        <div><span style="color:#000;font-weight:700;">Progreso</span><br><b style="color:#e9eef7;">${progressLabel}</b></div>
-        <div><span style="color:#000;font-weight:700;">Origen</span><br><b style="color:#e9eef7;">${origenTexto}</b></div>
-        <div><span style="color:#000;font-weight:700;">Destino</span><br><b style="color:#e9eef7;">${destinoTexto}</b></div>
-        <div><span style="color:#000;font-weight:700;">Gate salida</span><br><b style="color:#e9eef7;">${v.gate_origin || '—'}</b></div>
-        <div><span style="color:#000;font-weight:700;">Gate llegada</span><br><b style="color:#e9eef7;">${v.gate_destination || '—'}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Estado</span><br><b style="color:#e9eef7;">${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Progreso</span><br><b style="color:#e9eef7;">${progressLabel}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Origen</span><br><b style="color:#e9eef7;">${origenTexto}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Destino</span><br><b style="color:#e9eef7;">${destinoTexto}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Gate salida</span><br><b style="color:#e9eef7;">${v.gate_origin || '—'}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Gate llegada</span><br><b style="color:#e9eef7;">${v.gate_destination || '—'}</b></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
-        <div><span style="color:#000;font-weight:700;">Salida prog.</span><br><b style="color:#e9eef7;">${salidaProg}</b></div>
-        <div><span style="color:#000;font-weight:700;">Salida est.</span><br><b style="color:#e9eef7;">${salidaEst}</b></div>
-        <div><span style="color:#000;font-weight:700;">Salida real</span><br><b style="color:#e9eef7;">${salidaReal}</b></div>
-        <div><span style="color:#000;font-weight:700;">Llegada prog.</span><br><b style="color:#e9eef7;">${llegadaProg}</b></div>
-        <div><span style="color:#000;font-weight:700;">Llegada est.</span><br><b style="color:#e9eef7;">${llegadaEst}</b></div>
-        <div><span style="color:#000;font-weight:700;">Llegada real</span><br><b style="color:#e9eef7;">${llegadaReal}</b></div>
-        <div><span style="color:#000;font-weight:700;">Retraso salida</span><br><b style="color:#e9eef7;">${delaySalida}</b></div>
-        <div><span style="color:#000;font-weight:700;">Retraso llegada</span><br><b style="color:#e9eef7;">${delayLlegada}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Salida prog.</span><br><b style="color:#e9eef7;">${salidaProg}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Salida est.</span><br><b style="color:#e9eef7;">${salidaEst}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Salida real</span><br><b style="color:#e9eef7;">${salidaReal}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Llegada prog.</span><br><b style="color:#e9eef7;">${llegadaProg}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Llegada est.</span><br><b style="color:#e9eef7;">${llegadaEst}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Llegada real</span><br><b style="color:#e9eef7;">${llegadaReal}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Retraso salida</span><br><b style="color:#e9eef7;">${delaySalida}</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Retraso llegada</span><br><b style="color:#e9eef7;">${delayLlegada}</b></div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
-        <div><span style="color:#000;font-weight:700;">Velocidad</span><br><b style="color:#e9eef7;">${Math.round(v.vel)} kt</b></div>
-        <div><span style="color:#000;font-weight:700;">Rumbo</span><br><b style="color:#e9eef7;">${Math.round(v.heading)}°</b></div>
-        <div><span style="color:#000;font-weight:700;">Ruta</span><br><b style="color:#e9eef7;">${v.route_distance || '—'} nm</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Velocidad</span><br><b style="color:#e9eef7;">${Math.round(v.vel)} kt</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Rumbo</span><br><b style="color:#e9eef7;">${Math.round(v.heading)}°</b></div>
       </div>
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
