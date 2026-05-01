@@ -2042,6 +2042,7 @@ async function init(){
   buildOcaChecklist(); buildOcaDropdowns(); buildTablaIA(); initFechas();
   setupChartAutoResize();
   bindPlanVuelosCloseHandlers();
+}
   document.getElementById('oca-checklist').addEventListener('change',()=>{ updateOtaDropdown(); renderChart(); });
   showLoading();
   try{
