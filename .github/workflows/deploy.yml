@@ -45,3 +45,24 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    permissions:          # ← agregar esto
+      pages: write
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Build and Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs/'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
