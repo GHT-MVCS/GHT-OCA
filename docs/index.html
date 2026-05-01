@@ -1980,8 +1980,6 @@ function pintarMarcadores(vuelos) {
         <div><span style="color:#8faac5;font-weight:700;">Retraso llegada</span><br><b style="color:#e9eef7;">${delayLlegada}</b></div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
-        <div><span style="color:#8faac5;font-weight:700;">Velocidad</span><br><b style="color:#e9eef7;">${Math.round(v.vel)} kt</b></div>
-        <div><span style="color:#8faac5;font-weight:700;">Rumbo</span><br><b style="color:#e9eef7;">${Math.round(v.heading)}°</b></div>
       </div>
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
