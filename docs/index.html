@@ -1953,7 +1953,7 @@ function pintarMarcadores(vuelos) {
       html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));box-shadow:0 0 18px rgba(240,180,41,.55), inset 0 0 0 1px rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12);transform:rotate(${v.heading}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${v.tierra ? '🛬' : '✈️'}</span></div>`,
       iconSize: [34,34], iconAnchor:[17,17], popupAnchor:[0,-18], className:''
     });
-    const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;max-height:450px;overflow-y:auto;">
+    const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;max-height:450px;overflow-y:auto;background:#0d1f38;border-radius:8px;padding:4px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
         <div>
           <div style="font-size:15px;font-weight:800;color:#f0b429;">✈️ ${v.callsign || v.icao24}</div>
