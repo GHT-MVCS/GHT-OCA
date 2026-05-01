@@ -1937,7 +1937,7 @@ function pintarMarcadores(vuelos) {
       html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));box-shadow:0 0 18px rgba(240,180,41,.55), inset 0 0 0 1px rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12);transform:rotate(${v.heading}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${v.tierra ? '🛬' : '✈️'}</span></div>`,
       iconSize: [34,34], iconAnchor:[17,17], popupAnchor:[0,-18], className:''
     });
-    const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;">
+    const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;max-height:450px;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
         <div>
           <div style="font-size:15px;font-weight:800;color:#f0b429;">✈️ ${v.callsign || v.icao24}</div>
@@ -1946,30 +1946,27 @@ function pintarMarcadores(vuelos) {
         <div style="padding:6px 10px;border-radius:999px;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.35);font-size:12px;font-weight:700;color:#f0b429;">${progressLabel}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;">
-        <div><span style="color:#8faac5;">Estado</span><br><b>${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}</b></div>
-        <div><span style="color:#8faac5;">Progreso</span><br><b>${progressLabel}</b></div>
-        <div><span style="color:#8faac5;">Origen</span><br><b>${origenTexto}</b></div>
-        <div><span style="color:#8faac5;">Destino</span><br><b>${destinoTexto}</b></div>
-        <div><span style="color:#8faac5;">Gate salida</span><br><b>${v.gate_origin || '—'}</b></div>
-        <div><span style="color:#8faac5;">Gate llegada</span><br><b>${v.gate_destination || '—'}</b></div>
-        <div><span style="color:#8faac5;">Terminal salida</span><br><b>${v.terminal_origin || '—'}</b></div>
-        <div><span style="color:#8faac5;">Terminal llegada</span><br><b>${v.terminal_destination || '—'}</b></div>
+        <div><span style="color:#000;font-weight:700;">Estado</span><br><b style="color:#e9eef7;">${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}</b></div>
+        <div><span style="color:#000;font-weight:700;">Progreso</span><br><b style="color:#e9eef7;">${progressLabel}</b></div>
+        <div><span style="color:#000;font-weight:700;">Origen</span><br><b style="color:#e9eef7;">${origenTexto}</b></div>
+        <div><span style="color:#000;font-weight:700;">Destino</span><br><b style="color:#e9eef7;">${destinoTexto}</b></div>
+        <div><span style="color:#000;font-weight:700;">Gate salida</span><br><b style="color:#e9eef7;">${v.gate_origin || '—'}</b></div>
+        <div><span style="color:#000;font-weight:700;">Gate llegada</span><br><b style="color:#e9eef7;">${v.gate_destination || '—'}</b></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
-        <div><span style="color:#8faac5;">Salida prog.</span><br><b>${salidaProg}</b></div>
-        <div><span style="color:#8faac5;">Salida est.</span><br><b>${salidaEst}</b></div>
-        <div><span style="color:#8faac5;">Salida real</span><br><b>${salidaReal}</b></div>
-        <div><span style="color:#8faac5;">Llegada prog.</span><br><b>${llegadaProg}</b></div>
-        <div><span style="color:#8faac5;">Llegada est.</span><br><b>${llegadaEst}</b></div>
-        <div><span style="color:#8faac5;">Llegada real</span><br><b>${llegadaReal}</b></div>
-        <div><span style="color:#8faac5;">Retraso salida</span><br><b>${delaySalida}</b></div>
-        <div><span style="color:#8faac5;">Retraso llegada</span><br><b>${delayLlegada}</b></div>
+        <div><span style="color:#000;font-weight:700;">Salida prog.</span><br><b style="color:#e9eef7;">${salidaProg}</b></div>
+        <div><span style="color:#000;font-weight:700;">Salida est.</span><br><b style="color:#e9eef7;">${salidaEst}</b></div>
+        <div><span style="color:#000;font-weight:700;">Salida real</span><br><b style="color:#e9eef7;">${salidaReal}</b></div>
+        <div><span style="color:#000;font-weight:700;">Llegada prog.</span><br><b style="color:#e9eef7;">${llegadaProg}</b></div>
+        <div><span style="color:#000;font-weight:700;">Llegada est.</span><br><b style="color:#e9eef7;">${llegadaEst}</b></div>
+        <div><span style="color:#000;font-weight:700;">Llegada real</span><br><b style="color:#e9eef7;">${llegadaReal}</b></div>
+        <div><span style="color:#000;font-weight:700;">Retraso salida</span><br><b style="color:#e9eef7;">${delaySalida}</b></div>
+        <div><span style="color:#000;font-weight:700;">Retraso llegada</span><br><b style="color:#e9eef7;">${delayLlegada}</b></div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
-        <div><span style="color:#8faac5;">Altitud</span><br><b>${Math.round(v.alt)} ft</b></div>
-        <div><span style="color:#8faac5;">Velocidad</span><br><b>${Math.round(v.vel)} kt</b></div>
-        <div><span style="color:#8faac5;">Rumbo</span><br><b>${Math.round(v.heading)}°</b></div>
-        <div><span style="color:#8faac5;">Ruta</span><br><b>${v.route_distance || '—'} nm</b></div>
+        <div><span style="color:#000;font-weight:700;">Velocidad</span><br><b style="color:#e9eef7;">${Math.round(v.vel)} kt</b></div>
+        <div><span style="color:#000;font-weight:700;">Rumbo</span><br><b style="color:#e9eef7;">${Math.round(v.heading)}°</b></div>
+        <div><span style="color:#000;font-weight:700;">Ruta</span><br><b style="color:#e9eef7;">${v.route_distance || '—'} nm</b></div>
       </div>
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
@@ -1991,8 +1988,35 @@ function pintarMarcadores(vuelos) {
   });
   if (bounds.length) mapaPlanVuelos.fitBounds(bounds, { padding: [40,40], maxZoom:8 });
   console.log(`✅ Mapa: ${vuelos.length} aviones, ${rutasMapa.length} rutas`);
+  mostrarSidebarVuelos(vuelos);
 }
 
+function mostrarSidebarVuelos(vuelos) {
+  const container = document.getElementById('mapa-container-plan');
+  if (!container) return;
+  let sidebar = container.querySelector('#sidebar-vuelos');
+  if (!sidebar) {
+    sidebar = document.createElement('div');
+    sidebar.id = 'sidebar-vuelos';
+    sidebar.style = 'position:absolute;right:12px;top:12px;width:220px;background:rgba(15,32,64,.92);border:1px solid rgba(240,180,41,.35);border-radius:8px;z-index:900;box-shadow:0 4px 20px rgba(0,0,0,.5);overflow-y:auto;max-height:calc(100% - 24px);';
+    container.style.position = container.style.position || 'relative';
+    container.appendChild(sidebar);
+  }
+  let html = '<div style="padding:12px;border-bottom:2px solid rgba(240,180,41,.35);">';
+  html += '<div style="font-size:13px;font-weight:700;color:#f0b429;">✈️ Vuelos Encontrados</div>';
+  html += `<div style="font-size:11px;color:#8faac5;margin-top:2px;">${vuelos.length} vuelos</div>`;
+  html += '</div>';
+  html += '<div style="padding:8px;">';
+  vuelos.forEach(v => {
+    const mat = v.reg || '—';
+    html += `<div style="padding:8px;margin-bottom:6px;background:rgba(240,180,41,.08);border-left:3px solid #f0b429;border-radius:4px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(240,180,41,.15)'" onmouseout="this.style.background='rgba(240,180,41,.08)'" onclick="alert('${v.callsign || v.icao24}\\nMatrícula: ${mat}\\n${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}\\nProgreso: ${v.progress_percent ? Math.round(v.progress_percent) + '%' : '—'}');">
+      <div style="font-size:12px;font-weight:700;color:#f0b429;">${v.callsign || v.icao24}</div>
+      <div style="font-size:11px;color:#8faac5;margin-top:2px;">🔖 ${mat}</div>
+      <div style="font-size:10px;color:#999;margin-top:2px;">${v.operador || 'Op.'} · ${v.aircraft_type ? v.aircraft_type.substring(0, 8) : '?'}</div>
+    </div>`;
+  });
+  html += '</div>';
+  sidebar.innerHTML = html;
 // Función auxiliar para el botón (no usada directamente, pero se puede llamar si quieres)
 function cargarYActualizarMapa() {
   if (!mapaPlanVuelos) inicializarMapaPlanVuelos();
