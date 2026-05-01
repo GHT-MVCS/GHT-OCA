@@ -1687,7 +1687,14 @@ function inicializarMapaPlanVuelos() {
   if (ultimosVuelosMapa && ultimosVuelosMapa.length) {
     pintarMarcadores(ultimosVuelosMapa);
   } else {
-    mostrarMensajeMapa('Presione "Cargar Mapa" para ver posiciones en vivo');
+    const guardados = cargarUltimoMapaGuardado();
+    if (guardados && guardados.length) {
+      ultimosVuelosMapa = guardados;
+      pintarMarcadores(guardados);
+      showToast('🗺️ Restaurando el último mapa guardado', '#27ae60');
+    } else {
+      mostrarMensajeMapa('Presione "Cargar Mapa" para ver posiciones en vivo');
+    }
   }
 }
 
@@ -1814,6 +1821,13 @@ async function actualizarMapaAviones(forzar = false) {
       icao24: v.reg || v.ident,
       callsign: v.callsign,
       reg: v.reg,
+      operador: v.operador || '',
+      aircraft_type: v.aircraft_type || '',
+      flight_number: v.flight_number || '',
+      estado: v.estado || '',
+      progress_percent: v.progress_percent ?? null,
+      origen_nombre: v.origen_nombre || '',
+      origen_ciudad: v.origen_ciudad || '',
       lat: v.lat,
       lon: v.lon,
       alt: v.alt || 0,
@@ -1821,10 +1835,33 @@ async function actualizarMapaAviones(forzar = false) {
       vel: v.vel || 0,
       heading: v.heading || 0,
       origen: v.origen || '',
-      destino: v.destino || ''
+      destino: v.destino || '',
+      destino_nombre: v.destino_nombre || '',
+      destino_ciudad: v.destino_ciudad || '',
+      scheduled_out: v.scheduled_out || null,
+      estimated_out: v.estimated_out || null,
+      actual_out: v.actual_out || null,
+      scheduled_on: v.scheduled_on || null,
+      estimated_on: v.estimated_on || null,
+      actual_on: v.actual_on || null,
+      departure_delay: v.departure_delay ?? null,
+      arrival_delay: v.arrival_delay ?? null,
+      filed_ete: v.filed_ete ?? null,
+      route: v.route || '',
+      route_distance: v.route_distance ?? null,
+      gate_origin: v.gate_origin || '',
+      gate_destination: v.gate_destination || '',
+      terminal_origin: v.terminal_origin || '',
+      terminal_destination: v.terminal_destination || '',
+      actual_runway_off: v.actual_runway_off || '',
+      actual_runway_on: v.actual_runway_on || '',
+      filed_altitude: v.filed_altitude ?? null,
+      filed_airspeed: v.filed_airspeed ?? null,
+      timestamp: v.timestamp || null
     }));
 
     ultimosVuelosMapa = aviones;
+    guardarUltimoMapa(aviones);
     pintarMarcadores(aviones);
     showToast(`✅ ${aviones.length}/${todosIds.length} vuelos encontrados`, '#27ae60');
     console.log(`📊 Mapa actualizado: ${aviones.length} aviones (consulta de ${todosIds.length} IDs)`);
@@ -1869,6 +1906,7 @@ async function actualizarMapaAviones(forzar = false) {
 }
 
 function pintarMarcadores(vuelos) {
+  // remover overlays de carga/mensaje si existen
   const container = document.getElementById('mapa-container-plan');
   const ovLoad = container && container.querySelector && container.querySelector('#mapa-overlay-loading');
   if (ovLoad) ovLoad.remove();
@@ -1881,21 +1919,59 @@ function pintarMarcadores(vuelos) {
   rutasMapa = [];
   if (!vuelos.length) return;
   const bounds = [];
+  guardarUltimoMapa(vuelos);
   vuelos.forEach(v => {
+    const progress = typeof v.progress_percent === 'number' ? Math.max(0, Math.min(100, v.progress_percent)) : null;
+    const progressLabel = progress === null ? '—' : `${Math.round(progress)}%`;
+    const salidaProg = v.scheduled_out ? new Date(v.scheduled_out).toLocaleString() : '—';
+    const salidaEst = v.estimated_out ? new Date(v.estimated_out).toLocaleString() : '—';
+    const salidaReal = v.actual_out ? new Date(v.actual_out).toLocaleString() : '—';
+    const llegadaProg = v.scheduled_on ? new Date(v.scheduled_on).toLocaleString() : '—';
+    const llegadaEst = v.estimated_on ? new Date(v.estimated_on).toLocaleString() : '—';
+    const llegadaReal = v.actual_on ? new Date(v.actual_on).toLocaleString() : '—';
+    const delaySalida = v.departure_delay === null || v.departure_delay === undefined ? '—' : `${Math.round(v.departure_delay / 60)} min`;
+    const delayLlegada = v.arrival_delay === null || v.arrival_delay === undefined ? '—' : `${Math.round(v.arrival_delay / 60)} min`;
+    const origenTexto = [v.origen, v.origen_nombre || v.origen_ciudad].filter(Boolean).join(' - ') || 'N/A';
+    const destinoTexto = [v.destino, v.destino_nombre || v.destino_ciudad].filter(Boolean).join(' - ') || 'N/A';
     const icon = L.divIcon({
-      html: `<div style="transform:rotate(${v.heading}deg);font-size:22px;line-height:1;filter:drop-shadow(0 0 4px rgba(240,180,41,.8));">${v.tierra ? '🛬' : '✈️'}</div>`,
-      iconSize: [28,28], iconAnchor:[14,14], popupAnchor:[0,-16], className:''
+      html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));box-shadow:0 0 18px rgba(240,180,41,.55), inset 0 0 0 1px rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12);transform:rotate(${v.heading}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${v.tierra ? '🛬' : '✈️'}</span></div>`,
+      iconSize: [34,34], iconAnchor:[17,17], popupAnchor:[0,-18], className:''
     });
-    const popup = `<div style="font-family:monospace;font-size:13px;min-width:220px;">
-      <b style="color:#f0b429;">✈️ ${v.callsign || v.icao24}</b><hr style="margin:4px 0; border-color:#333;">
-      <span style="color:#888;">Matrícula:</span> ${v.reg || 'N/A'}<br>
-      <span style="color:#888;">Origen:</span> ${v.origen || 'N/A'}<br>
-      <span style="color:#888;">Destino:</span> ${v.destino || 'N/A'}<br>
-      <span style="color:#888;">Altitud:</span> ${Math.round(v.alt)} ft<br>
-      <span style="color:#888;">Velocidad:</span> ${Math.round(v.vel)} kt<br>
-      <span style="color:#888;">Rumbo:</span> ${Math.round(v.heading)}°<br>
-      <span style="color:#888;">Estado:</span> ${v.tierra ? '🅿️ En tierra' : '✈️ En vuelo'}<br>
-      <span style="color:#888;">Última act.:</span> ${new Date().toLocaleTimeString()}
+    const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#f0b429;">✈️ ${v.callsign || v.icao24}</div>
+          <div style="font-size:12px;color:#8faac5;">${v.reg || 'N/A'} · ${v.operador || 'Operador N/A'} · ${v.aircraft_type || 'Tipo N/A'}</div>
+        </div>
+        <div style="padding:6px 10px;border-radius:999px;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.35);font-size:12px;font-weight:700;color:#f0b429;">${progressLabel}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;">
+        <div><span style="color:#8faac5;">Estado</span><br><b>${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}</b></div>
+        <div><span style="color:#8faac5;">Progreso</span><br><b>${progressLabel}</b></div>
+        <div><span style="color:#8faac5;">Origen</span><br><b>${origenTexto}</b></div>
+        <div><span style="color:#8faac5;">Destino</span><br><b>${destinoTexto}</b></div>
+        <div><span style="color:#8faac5;">Gate salida</span><br><b>${v.gate_origin || '—'}</b></div>
+        <div><span style="color:#8faac5;">Gate llegada</span><br><b>${v.gate_destination || '—'}</b></div>
+        <div><span style="color:#8faac5;">Terminal salida</span><br><b>${v.terminal_origin || '—'}</b></div>
+        <div><span style="color:#8faac5;">Terminal llegada</span><br><b>${v.terminal_destination || '—'}</b></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
+        <div><span style="color:#8faac5;">Salida prog.</span><br><b>${salidaProg}</b></div>
+        <div><span style="color:#8faac5;">Salida est.</span><br><b>${salidaEst}</b></div>
+        <div><span style="color:#8faac5;">Salida real</span><br><b>${salidaReal}</b></div>
+        <div><span style="color:#8faac5;">Llegada prog.</span><br><b>${llegadaProg}</b></div>
+        <div><span style="color:#8faac5;">Llegada est.</span><br><b>${llegadaEst}</b></div>
+        <div><span style="color:#8faac5;">Llegada real</span><br><b>${llegadaReal}</b></div>
+        <div><span style="color:#8faac5;">Retraso salida</span><br><b>${delaySalida}</b></div>
+        <div><span style="color:#8faac5;">Retraso llegada</span><br><b>${delayLlegada}</b></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
+        <div><span style="color:#8faac5;">Altitud</span><br><b>${Math.round(v.alt)} ft</b></div>
+        <div><span style="color:#8faac5;">Velocidad</span><br><b>${Math.round(v.vel)} kt</b></div>
+        <div><span style="color:#8faac5;">Rumbo</span><br><b>${Math.round(v.heading)}°</b></div>
+        <div><span style="color:#8faac5;">Ruta</span><br><b>${v.route_distance || '—'} nm</b></div>
+      </div>
+      <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
     const marker = L.marker([v.lat, v.lon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
     markersAviones.push(marker);
@@ -1903,8 +1979,12 @@ function pintarMarcadores(vuelos) {
     if (v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
       const start = AEROPUERTOS[v.origen];
       const end   = AEROPUERTOS[v.destino];
+      const rutaGlow = L.polyline([[start.lat, start.lon], [end.lat, end.lon]], {
+        color: '#f0b429', weight: 6, opacity: 0.18, lineCap: 'round'
+      }).addTo(mapaPlanVuelos);
+      rutasMapa.push(rutaGlow);
       const ruta = L.polyline([[start.lat, start.lon], [end.lat, end.lon]], {
-        color: '#f0b429', weight: 2, opacity: 0.5, dashArray: '5, 8'
+        color: '#f0b429', weight: 2.6, opacity: 0.85, dashArray: '8, 10', lineCap: 'round'
       }).addTo(mapaPlanVuelos);
       rutasMapa.push(ruta);
     }
