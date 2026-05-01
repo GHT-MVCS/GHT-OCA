@@ -12,7 +12,12 @@ export class FlightsController {
 
   @Get('live')
   async getLive(@Query('ids') ids: string) {
-    // ... tu código existente sin cambios ...
+    if (!ids) {
+      return { error: 'IDs requeridos', data: [] };
+    }
+    const idArray = ids.split(',').map(id => id.trim());
+    const vuelos = await this.flightsService.getLiveMultiple(idArray);
+    return { ok: true, total: vuelos.length, data: vuelos };
   }
 
   @Get('one')
