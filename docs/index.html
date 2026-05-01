@@ -979,13 +979,16 @@ function calcularLimiteHFD(row) {
 // ═══════════════════════════════════════════
 async function cargarDatos() {
   showLoading();
-  return new Promise((res,rej)=>{
-    Papa.parse(URL_CSV,{
-      download:true, header:true,
-      complete(r){ dfGlobal=procesarDF(r.data.filter(x=>Object.values(x).some(v=>v))); hideLoading(); res(); },
-      error(e){ hideLoading(); rej(e); }
-    });
-  });
+  return Promise.race([
+    new Promise((res,rej)=>{
+      Papa.parse(URL_CSV,{
+        download:true, header:true,
+        complete(r){ dfGlobal=procesarDF(r.data.filter(x=>Object.values(x).some(v=>v))); hideLoading(); res(); },
+        error(e){ hideLoading(); rej(e); }
+      });
+    }),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout al cargar datos (15s)')), 15000))
+  ]);
 }
 
 // ═══════════════════════════════════════════
