@@ -1932,11 +1932,10 @@ async function actualizarMapaAviones(forzar = false) {
 }
 
 function pintarMarcadores(vuelos) {
-  // remover overlays de carga/mensaje si existen
   const container = document.getElementById('mapa-container-plan');
-  const ovLoad = container && container.querySelector && container.querySelector('#mapa-overlay-loading');
+  const ovLoad = container && container.querySelector('#mapa-overlay-loading');
   if (ovLoad) ovLoad.remove();
-  const ovMsg = container && container.querySelector && container.querySelector('#mapa-overlay-message');
+  const ovMsg = container && container.querySelector('#mapa-overlay-message');
   if (ovMsg) ovMsg.remove();
 
   markersAviones.forEach(m => m && mapaPlanVuelos.removeLayer(m));
@@ -1946,7 +1945,20 @@ function pintarMarcadores(vuelos) {
   if (!vuelos.length) return;
   const bounds = [];
   guardarUltimoMapa(vuelos);
+
   vuelos.forEach(v => {
+    // ← NUEVO: validar coordenadas
+    const tienePos = typeof v.lat === 'number' && typeof v.lon === 'number'
+                     && !isNaN(v.lat) && !isNaN(v.lon);
+    if (!tienePos) {
+      console.warn(`⚠️ Sin coordenadas: ${v.callsign || v.reg}`);
+      return;
+    }
+
+    // ← NUEVO: detectar si está programado o en tierra sin movimiento
+    const esProgramado = (v.estado || '').toLowerCase().includes('programado')
+                         || (v.tierra && (v.vel || 0) < 5);
+
     const progress = typeof v.progress_percent === 'number' ? Math.max(0, Math.min(100, v.progress_percent)) : null;
     const progressLabel = progress === null ? '—' : `${Math.round(progress)}%`;
     const salidaProg = v.scheduled_out ? new Date(v.scheduled_out).toLocaleString() : '—';
@@ -1955,14 +1967,23 @@ function pintarMarcadores(vuelos) {
     const llegadaProg = v.scheduled_on ? new Date(v.scheduled_on).toLocaleString() : '—';
     const llegadaEst = v.estimated_on ? new Date(v.estimated_on).toLocaleString() : '—';
     const llegadaReal = v.actual_on ? new Date(v.actual_on).toLocaleString() : '—';
-    const delaySalida = v.departure_delay === null || v.departure_delay === undefined ? '—' : `${Math.round(v.departure_delay / 60)} min`;
-    const delayLlegada = v.arrival_delay === null || v.arrival_delay === undefined ? '—' : `${Math.round(v.arrival_delay / 60)} min`;
+    const delaySalida = v.departure_delay == null ? '—' : `${Math.round(v.departure_delay / 60)} min`;
+    const delayLlegada = v.arrival_delay == null ? '—' : `${Math.round(v.arrival_delay / 60)} min`;
     const origenTexto = [v.origen, v.origen_nombre || v.origen_ciudad].filter(Boolean).join(' - ') || 'N/A';
     const destinoTexto = [v.destino, v.destino_nombre || v.destino_ciudad].filter(Boolean).join(' - ') || 'N/A';
+
+    // ← NUEVO: icono diferente según estado
+    const iconEmoji = esProgramado ? '🅿️' : (v.tierra ? '🛬' : '✈️');
+    const iconBg = esProgramado
+      ? 'background:rgba(142,68,173,.85);'
+      : 'background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));';
+    const iconRotacion = esProgramado ? 0 : (v.heading || 0);
+
     const icon = L.divIcon({
-      html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));box-shadow:0 0 18px rgba(240,180,41,.55), inset 0 0 0 1px rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12);transform:rotate(${v.heading}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${v.tierra ? '🛬' : '✈️'}</span></div>`,
+      html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;${iconBg}box-shadow:0 0 18px rgba(240,180,41,.55);border:1px solid rgba(255,255,255,.12);transform:rotate(${iconRotacion}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${iconEmoji}</span></div>`,
       iconSize: [34,34], iconAnchor:[17,17], popupAnchor:[0,-18], className:''
     });
+
     const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;max-height:450px;overflow-y:auto;background:#0d1f38;border-radius:8px;padding:4px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
         <div>
@@ -1990,13 +2011,18 @@ function pintarMarcadores(vuelos) {
         <div><span style="color:#8faac5;font-weight:700;">Retraso llegada</span><br><b style="color:#e9eef7;">${delayLlegada}</b></div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">
+        <div><span style="color:#8faac5;font-weight:700;">Velocidad</span><br><b style="color:#e9eef7;">${Math.round(v.vel)} kt</b></div>
+        <div><span style="color:#8faac5;font-weight:700;">Rumbo</span><br><b style="color:#e9eef7;">${Math.round(v.heading)}°</b></div>
       </div>
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
+
     const marker = L.marker([v.lat, v.lon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
     markersAviones.push(marker);
     bounds.push([v.lat, v.lon]);
-    if (v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
+
+    // ← NUEVO: solo dibuja ruta si está en vuelo real (no programado, no en tierra)
+    if (!esProgramado && v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
       const start = AEROPUERTOS[v.origen];
       const end   = AEROPUERTOS[v.destino];
       const rutaGlow = L.polyline([[start.lat, start.lon], [end.lat, end.lon]], {
@@ -2009,11 +2035,11 @@ function pintarMarcadores(vuelos) {
       rutasMapa.push(ruta);
     }
   });
+
   if (bounds.length) mapaPlanVuelos.fitBounds(bounds, { padding: [40,40], maxZoom:8 });
   console.log(`✅ Mapa: ${vuelos.length} aviones, ${rutasMapa.length} rutas`);
   mostrarSidebarVuelos(vuelos);
 }
-
 function mostrarSidebarVuelos(vuelos) {
   const container = document.getElementById('mapa-container-plan');
   if (!container) return;
