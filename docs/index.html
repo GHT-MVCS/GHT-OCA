@@ -553,7 +553,7 @@
       <span class="filter-label">🏠 Estación:</span>
       <select id="pv-estacion" style="width:120px;"><option value="">Todas</option><option value="BOG">BOG</option><option value="MDE">MDE</option><option value="UIO">UIO</option></select>
       <button class="btn btn-green btn-sm" onclick="cargarPlanVuelos()">🔄 Cargar</button>
-      <button class="btn btn-blue btn-sm" onclick="if(!mapaPlanVuelos) inicializarMapaPlanVuelos(); actualizarMapaAviones(true);">🗺️ Cargar Mapa</button>
+      <button class="btn btn-blue btn-sm" onclick="if(!mapaPlanVuelos) inicializarMapaPlanVuelos().then(()=>actualizarMapaAviones(true)); else actualizarMapaAviones(true);">🗺️ Cargar Mapa</button>
     </div>
 
     <!-- Layout dos columnas: TABLA + MAPA -->
@@ -1396,12 +1396,9 @@ function updatePanel(dff){
 //  PLAN DE VUELOS — ETD vs ATD
 //  Filtra por FECHA_RESERVA, muestra TODAS las estaciones
 // ═══════════════════════════════════════════
-function abrirPlanVuelos(){
+async function abrirPlanVuelos(){
   const overlay = document.getElementById('modal-plan-vuelos');
-  if (overlay) {
-    overlay.style.display = '';
-    overlay.classList.add('open');
-  }
+  if (overlay) { overlay.style.display = ''; overlay.classList.add('open'); }
   const now=new Date();
   const ayer=new Date(now); ayer.setDate(now.getDate()-1);
   const manana=new Date(now); manana.setDate(now.getDate()+1);
@@ -1409,6 +1406,17 @@ function abrirPlanVuelos(){
   document.getElementById('pv-fecha-inicio').value=toInputDate(ayer);
   document.getElementById('pv-fecha-fin').value=toInputDate(manana);
   cargarPlanVuelos();
+
+  // ← NUEVO: inicializar mapa con caché sin llamar a la API
+  if (!mapaPlanVuelos) inicializarMapaPlanVuelos();
+  else {
+    const guardados = await cargarUltimoMapaGuardado();
+    if (guardados && guardados.length) {
+      ultimosVuelosMapa = guardados;
+      pintarMarcadores(guardados);
+      showToast(`🗺️ ${guardados.length} vuelos del último mapa`, '#3498db');
+    }
+  }
 }
 function cerrarPlanVuelos(){
   try {
@@ -1685,28 +1693,24 @@ function cargarUltimoMapaGuardado() {
   }
 }
 
-function inicializarMapaPlanVuelos() {
+async function inicializarMapaPlanVuelos() {
   const container = document.getElementById('mapa-container-plan');
   if (!container) return;
   container.innerHTML = '<div id="mapa-leaflet-plan" style="width:100%;height:100%;border-radius:8px;"></div>';
   if (mapaPlanVuelos) mapaPlanVuelos.remove();
   mapaPlanVuelos = L.map('mapa-leaflet-plan').setView([4.6, -74.1], 5);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OSM &copy; CartoDB',
-    subdomains: 'abcd',
-    maxZoom: 18
+    attribution: '&copy; OSM &copy; CartoDB', subdomains: 'abcd', maxZoom: 18
   }).addTo(mapaPlanVuelos);
-  if (ultimosVuelosMapa && ultimosVuelosMapa.length) {
-    pintarMarcadores(ultimosVuelosMapa);
+
+  // ← Cargar caché sin llamar API
+  const guardados = await cargarUltimoMapaGuardado();
+  if (guardados && guardados.length) {
+    ultimosVuelosMapa = guardados;
+    pintarMarcadores(guardados);
+    showToast(`🗺️ ${guardados.length} vuelos del último mapa`, '#3498db');
   } else {
-    const guardados = cargarUltimoMapaGuardado();
-    if (guardados && guardados.length) {
-      ultimosVuelosMapa = guardados;
-      pintarMarcadores(guardados);
-      showToast('🗺️ Restaurando el último mapa guardado', '#27ae60');
-    } else {
-      mostrarMensajeMapa('Presione "Cargar Mapa" para ver posiciones en vivo');
-    }
+    mostrarMensajeMapa('Presione "Cargar Mapa" para obtener posiciones en vivo');
   }
 }
 
