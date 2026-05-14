@@ -702,6 +702,8 @@ let chartResizeTimer = null;
 let chartRerenderTimer = null;
 let chartIsRerendering = false;
 let lastChartContainerWidth = 0;
+// Lista global de vuelos mostrados en el plan (disponible en window)
+window.vuelosPlanVisibles = window.vuelosPlanVisibles || [];
 
 // ═══════════════════════════════════════════
 //  PARSING FECHAS
@@ -1761,7 +1763,7 @@ function mostrarMensajeMapa(msg) {
 function getIdsDelDia() {
   const matsUnicas = new Set();
   const otasUnicas = new Set();
-  (vuelosPlanVisibles || []).forEach(v => {
+  (window.vuelosPlanVisibles || []).forEach(v => {
     const mat = String(v.MATRICULA || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (mat && mat !== 'NAN' && mat !== '—' && mat.length >= 4) {
       matsUnicas.add(mat);
