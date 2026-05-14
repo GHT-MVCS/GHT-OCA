@@ -2038,7 +2038,8 @@ function pintarMarcadores(vuelos) {
       const distToOrigin = originAp ? Math.hypot(lat - originAp.lat, lon - originAp.lon) : null;
       const progressPct = (typeof progress === 'string') ? parseFloat(progress) : (typeof progress === 'number' ? progress : null);
       const nearOrigin = distToOrigin !== null && distToOrigin < 0.04; // ~4-5km
-      if (originAp && nearOrigin && probablementeEnVuelo && progressPct !== null && progressPct > 5) {
+      // umbral reducido: si el vuelo muestra cualquier progreso (>1%) intentamos usar última posición
+      if (originAp && nearOrigin && probablementeEnVuelo && progressPct !== null && progressPct > 1) {
         const saved = Array.isArray(ultimosVuelosMapa) && ultimosVuelosMapa.length ? ultimosVuelosMapa : cargarUltimoMapaGuardado();
         if (Array.isArray(saved) && saved.length) {
           const keyToMatch = String(v.callsign || v.reg || v.ident || v.icao24 || '').toUpperCase();
@@ -2057,6 +2058,19 @@ function pintarMarcadores(vuelos) {
             altLon = parseFloat(alt.lon);
             usedAltPos = true;
             console.info(`ℹ️ Usando última posición conocida para ${v.callsign||v.reg}: ${altLat},${altLon} (orig: ${originAp.lat},${originAp.lon})`);
+          }
+          else {
+            // Si no hay posición guardada y tenemos origen/destino, interpolar según progress
+            try {
+              const destAp = (v.destino && AEROPUERTOS[v.destino]) ? AEROPUERTOS[v.destino] : null;
+              if (!alt && destAp && originAp && probablementeEnVuelo && progressPct !== null && progressPct > 1) {
+                const frac = Math.max(0, Math.min(1, progressPct / 100));
+                altLat = originAp.lat + (destAp.lat - originAp.lat) * frac;
+                altLon = originAp.lon + (destAp.lon - originAp.lon) * frac;
+                usedAltPos = true;
+                console.info(`ℹ️ Posición interpolada para ${v.callsign||v.reg}: ${altLat.toFixed(4)},${altLon.toFixed(4)} (frac:${(frac*100).toFixed(1)}%)`);
+              }
+            } catch (e) { /* ignore */ }
           }
         }
       }
@@ -2114,15 +2128,34 @@ function mostrarSidebarVuelos(vuelos) {
       const keys = [String(apiFlight.reg||''), String(apiFlight.callsign||''), String(apiFlight.ident||''), String(apiFlight.icao24||'')]
         .map(s => s.replace(/[^A-Z0-9]/gi,'').toUpperCase()).filter(Boolean);
       if (!keys.length) return null;
+      const preferedStations = ['BOG','MDE','UIO'];
       for (const row of window.vuelosPlanVisibles) {
-        const rowMat = String(row.MATRICULA||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
-        const rowOta = String(row.OTA_ID||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
-        const rowId  = String(row.ID_VUELO||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
+        const rowMat = (String(row.MATRICULA||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+        const rowOta = (String(row.OTA_ID||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+        const rowId  = (String(row.ID_VUELO||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+        const origenCode = (row.ORIGEN||'').toString().toUpperCase();
+        const ocaCode = (row.OCA||'').toString().toUpperCase();
         for (const k of keys) {
           if (!k) continue;
-          if (rowMat && rowMat.includes(k)) return row.OCA || row.ORIGEN || null;
-          if (rowOta && rowOta.includes(k)) return row.OCA || row.ORIGEN || null;
-          if (rowId && rowId.includes(k)) return row.OCA || row.ORIGEN || null;
+          if (rowMat && (rowMat === k || rowMat.includes(k) || k.includes(rowMat))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+          if (rowOta && (rowOta === k || rowOta.includes(k) || k.includes(rowOta))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+          if (rowId && (rowId === k || rowId.includes(k) || k.includes(rowId))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+        }
+      }
+      // Fallback: buscar en dfGlobal (dataset completo) si no se encuentra en la vista actual
+      if (typeof dfGlobal !== 'undefined' && Array.isArray(dfGlobal) && dfGlobal.length) {
+        for (const row of dfGlobal) {
+          const rowMat = (String(row.MATRICULA||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+          const rowOta = (String(row.OTA_ID||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+          const rowId  = (String(row.ID_VUELO||'').replace(/[^A-Z0-9]/gi,'').toUpperCase())||'';
+          const origenCode = (row.ORIGEN||'').toString().toUpperCase();
+          const ocaCode = (row.OCA||'').toString().toUpperCase();
+          for (const k of keys) {
+            if (!k) continue;
+            if (rowMat && (rowMat === k || rowMat.includes(k) || k.includes(rowMat))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+            if (rowOta && (rowOta === k || rowOta.includes(k) || k.includes(rowOta))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+            if (rowId && (rowId === k || rowId.includes(k) || k.includes(rowId))) return preferedStations.includes(origenCode)?origenCode:(ocaCode.split('_')[0]||origenCode||null);
+          }
         }
       }
     } catch (e) {
