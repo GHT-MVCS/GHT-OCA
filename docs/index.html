@@ -1937,11 +1937,14 @@ function pintarMarcadores(vuelos) {
   guardarUltimoMapa(vuelos);
 
   vuelos.forEach(v => {
-    // ← NUEVO: validar coordenadas
-    const tienePos = typeof v.lat === 'number' && typeof v.lon === 'number'
-                     && !isNaN(v.lat) && !isNaN(v.lon);
+    // ← NUEVO: validar y normalizar coordenadas (acepta strings numéricas)
+    const latRaw = v.lat ?? v.latitude ?? v.latitude_deg ?? null;
+    const lonRaw = v.lon ?? v.longitude ?? v.longitude_deg ?? null;
+    const lat = latRaw === null || latRaw === undefined ? NaN : parseFloat(latRaw);
+    const lon = lonRaw === null || lonRaw === undefined ? NaN : parseFloat(lonRaw);
+    const tienePos = Number.isFinite(lat) && Number.isFinite(lon);
     if (!tienePos) {
-      console.warn(`⚠️ Sin coordenadas: ${v.callsign || v.reg}`);
+      console.warn(`⚠️ Sin coordenadas válidas: ${v.callsign || v.reg} lat:${latRaw} lon:${lonRaw}`);
       return;
     }
 
@@ -2016,8 +2019,11 @@ function pintarMarcadores(vuelos) {
     const yaEnEstePunto = bounds.filter(b => b[0] === v.lat && b[1] === v.lon).length;
     const offsetLat = yaEnEstePunto * 0.18;
     const offsetLon = yaEnEstePunto * 0.18;
-    const marker = L.marker([v.lat + offsetLat, v.lon + offsetLon], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);    markersAviones.push(marker);
-    bounds.push([v.lat, v.lon]);
+    const latForMarker = lat + offsetLat;
+    const lonForMarker = lon + offsetLon;
+    const marker = L.marker([latForMarker, lonForMarker], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
+    markersAviones.push(marker);
+    bounds.push([lat, lon]);
 
     // ← NUEVO: solo dibuja ruta si está en vuelo real (no programado, no en tierra)
     if (!esProgramado && v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
