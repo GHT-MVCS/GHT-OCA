@@ -2076,6 +2076,26 @@ function pintarMarcadores(vuelos) {
       }
     } catch (e) { console.warn('Error buscando última posición conocida', e); }
 
+    // Si todavía no usamos posición alternativa y la API devuelve coordenada = aeropuerto
+    // pero el progreso es alto (>50%), aplicar un desplazamiento visual hacia destino
+    try {
+      const progressVal = (typeof progress === 'number') ? progress : (typeof progress === 'string' ? parseFloat(progress) : null);
+      if (!usedAltPos && originAp && progressVal !== null && progressVal > 50 && nearOrigin) {
+        const destAp = (v.destino && AEROPUERTOS[v.destino]) ? AEROPUERTOS[v.destino] : null;
+        const shiftFactor = Math.min(1, (progressVal - 50) / 50); // 0..1
+        if (destAp) {
+          altLat = originAp.lat + (destAp.lat - originAp.lat) * (0.1 + 0.6 * shiftFactor);
+          altLon = originAp.lon + (destAp.lon - originAp.lon) * (0.1 + 0.6 * shiftFactor);
+        } else {
+          // dirección estimada: desplazar ligeramente al noreste/sureste según hemisferio
+          altLat = originAp.lat + (originAp.lat > 0 ? 0.12 * shiftFactor : -0.12 * shiftFactor);
+          altLon = originAp.lon + (0.12 * shiftFactor);
+        }
+        usedAltPos = true;
+        console.info(`ℹ️ Desplazamiento visual aplicado para ${v.callsign||v.reg}: ${altLat.toFixed(4)},${altLon.toFixed(4)} (prog:${progressVal}%)`);
+      }
+    } catch (e) { /* ignore */ }
+
     const offsetLat = yaEnEstePunto * 0.18;
     const offsetLon = yaEnEstePunto * 0.18;
     const latForMarker = altLat + offsetLat;
