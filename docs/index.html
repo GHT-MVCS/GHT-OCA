@@ -1945,12 +1945,17 @@ function pintarMarcadores(vuelos) {
       return;
     }
 
-    // ← NUEVO: detectar si está programado o en tierra sin movimiento
-    const esProgramado = (v.estado || '').toLowerCase().includes('programado')
-                         || (v.tierra && (v.vel || 0) < 5);
-
+    // ← NUEVO: detectar estado de vuelo (mejor heurística)
+    const estadoStr = String(v.estado || '').toLowerCase();
+    const velocidad = Number(v.vel || 0);
+    const altitud = Number(v.alt || 0);
     const progress = typeof v.progress_percent === 'number' ? Math.max(0, Math.min(100, v.progress_percent)) : null;
     const progressLabel = progress === null ? '—' : `${Math.round(progress)}%`;
+
+    // heurística: si tiene altitud o velocidad relevantes o progreso, considerarlo en vuelo
+    const probablementeEnVuelo = (altitud > 50) || (velocidad > 30) || (progress !== null && progress > 1 && progress < 99);
+    const enTierra = v.tierra === true || (altitud <= 10 && velocidad < 6);
+    const esProgramado = estadoStr.includes('programado') && !probablementeEnVuelo;
     const salidaProg = v.scheduled_out ? new Date(v.scheduled_out).toLocaleString() : '—';
     const salidaEst = v.estimated_out ? new Date(v.estimated_out).toLocaleString() : '—';
     const salidaReal = v.actual_out ? new Date(v.actual_out).toLocaleString() : '—';
@@ -1963,11 +1968,11 @@ function pintarMarcadores(vuelos) {
     const destinoTexto = [v.destino, v.destino_nombre || v.destino_ciudad].filter(Boolean).join(' - ') || 'N/A';
 
     // ← NUEVO: icono diferente según estado
-    const iconEmoji = esProgramado ? '🅿️' : (v.tierra ? '🛬' : '✈️');
+    const iconEmoji = esProgramado ? '🅿️' : (probablementeEnVuelo ? '✈️' : '🛬');
     const iconBg = esProgramado
       ? 'background:rgba(142,68,173,.85);'
-      : 'background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));';
-    const iconRotacion = esProgramado ? 0 : (v.heading || 0);
+      : (probablementeEnVuelo ? 'background:linear-gradient(145deg,rgba(240,180,41,.95),rgba(15,32,64,.96));' : 'background:linear-gradient(145deg,rgba(60,60,60,.95),rgba(15,32,64,.96));');
+    const iconRotacion = probablementeEnVuelo ? (v.heading || 0) : 0;
 
     const icon = L.divIcon({
       html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;${iconBg}box-shadow:0 0 18px rgba(240,180,41,.55);border:1px solid rgba(255,255,255,.12);transform:rotate(${iconRotacion}deg);"><span style="font-size:17px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));">${iconEmoji}</span></div>`,
