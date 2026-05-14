@@ -1548,7 +1548,8 @@ function cargarPlanVuelos(){
   });
 
   // Guardar dataset visible para búsquedas de mapa (prioridad matrícula)
-  vuelosPlanVisibles = [...vuelos];
+  window.vuelosPlanVisibles = [...vuelos];
+  console.info('ℹ️ vuelosPlanVisibles cargados:', window.vuelosPlanVisibles.length);
 
   // Estadísticas
   let totATD=0,totETD=0,totTarde=0;
