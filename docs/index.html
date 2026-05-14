@@ -2103,14 +2103,42 @@ function mostrarSidebarVuelos(vuelos) {
   html += `<div style="font-size:11px;color:#8faac5;margin-top:2px;">${vuelos.length} vuelos</div>`;
   html += '</div>';
   html += '<div style="padding:8px;">';
+
+  // Intentar encontrar la estación (BOG/MDE/UIO) para cada vuelo comparando matrícula/callsign
+  function findStationForFlight(apiFlight) {
+    try {
+      if (!window.vuelosPlanVisibles || !window.vuelosPlanVisibles.length) return null;
+      const keys = [String(apiFlight.reg||''), String(apiFlight.callsign||''), String(apiFlight.ident||''), String(apiFlight.icao24||'')]
+        .map(s => s.replace(/[^A-Z0-9]/gi,'').toUpperCase()).filter(Boolean);
+      if (!keys.length) return null;
+      for (const row of window.vuelosPlanVisibles) {
+        const rowMat = String(row.MATRICULA||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
+        const rowOta = String(row.OTA_ID||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
+        const rowId  = String(row.ID_VUELO||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
+        for (const k of keys) {
+          if (!k) continue;
+          if (rowMat && rowMat.includes(k)) return row.OCA || row.ORIGEN || null;
+          if (rowOta && rowOta.includes(k)) return row.OCA || row.ORIGEN || null;
+          if (rowId && rowId.includes(k)) return row.OCA || row.ORIGEN || null;
+        }
+      }
+    } catch (e) {
+      console.warn('findStationForFlight error', e);
+    }
+    return null;
+  }
+
   vuelos.forEach(v => {
     const mat = v.reg || '—';
-    html += `<div style="padding:8px;margin-bottom:6px;background:rgba(240,180,41,.08);border-left:3px solid #f0b429;border-radius:4px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(240,180,41,.15)'" onmouseout="this.style.background='rgba(240,180,41,.08)'" onclick="alert('${v.callsign || v.icao24}\\nMatrícula: ${mat}\\n${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}\\nProgreso: ${v.progress_percent ? Math.round(v.progress_percent) + '%' : '—'}');">
+    const estacion = findStationForFlight(v);
+    const estLabel = (estacion && ['BOG','MDE','UIO'].includes(String(estacion).toUpperCase())) ? String(estacion).toUpperCase() + ' · ' : '';
+    html += `<div style="padding:8px;margin-bottom:6px;background:rgba(240,180,41,.08);border-left:3px solid #f0b429;border-radius:4px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(240,180,41,.15)'" onmouseout="this.style.background='rgba(240,180,41,.08)'" onclick="alert('${v.callsign || v.icao24}\nMatrícula: ${mat}\n${v.estado || (v.tierra ? 'En tierra' : 'En vuelo')}\nProgreso: ${v.progress_percent ? Math.round(v.progress_percent) + '%' : '—'}');">
       <div style="font-size:12px;font-weight:700;color:#f0b429;">${v.callsign || v.icao24}</div>
-      <div style="font-size:11px;color:#8faac5;margin-top:2px;">🔖 ${mat}</div>
+      <div style="font-size:11px;color:#8faac5;margin-top:2px;">🔖 ${estLabel}${mat}</div>
       <div style="font-size:10px;color:#999;margin-top:2px;">${v.operador || 'Op.'} · ${v.aircraft_type ? v.aircraft_type.substring(0, 8) : '?'}</div>
     </div>`;
   });
+
   html += '</div>';
   sidebar.innerHTML = html;
 }
