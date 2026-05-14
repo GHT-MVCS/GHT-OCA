@@ -1982,10 +1982,12 @@ function pintarMarcadores(vuelos) {
       iconSize: [34,34], iconAnchor:[17,17], popupAnchor:[0,-18], className:''
     });
 
+    const tsStr = v.timestamp ? new Date(v.timestamp).toLocaleString() : '—';
     const popup = `<div style="font-family:Inter,system-ui,sans-serif;font-size:13px;min-width:300px;max-width:360px;color:#e9eef7;max-height:450px;overflow-y:auto;background:#0d1f38;border-radius:8px;padding:4px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
         <div>
           <div style="font-size:15px;font-weight:800;color:#f0b429;">✈️ ${v.callsign || v.icao24}</div>
+          <div style="font-size:11px;color:#8faac5;margin-top:6px;">POS: ${lat.toFixed(4)}, ${lon.toFixed(4)} · TS: ${tsStr}</div>
           <div style="font-size:12px;color:#8faac5;">${v.reg || 'N/A'} · ${v.operador || 'Operador N/A'} · ${v.aircraft_type || 'Tipo N/A'}</div>
         </div>
         <div style="padding:6px 10px;border-radius:999px;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.35);font-size:12px;font-weight:700;color:#f0b429;">${progressLabel}</div>
@@ -2015,15 +2017,55 @@ function pintarMarcadores(vuelos) {
       <div style="margin-top:10px;color:#8faac5;font-size:12px;">Última act.: <b>${new Date(v.timestamp || Date.now()).toLocaleString()}</b></div>
     </div>`;
 
+      // Depuración: cuando el API indica progreso pero no hay movimiento significativo
+      if (probablementeEnVuelo && velocidad < 10 && altitud < 50) {
+        console.warn(`⚠️ ${v.callsign || v.icao24} parece en vuelo (progress:${progressLabel}) pero sin movimiento: vel=${velocidad} kt alt=${altitud} ts=${v.timestamp} pos=${lat},${lon}`);
+      }
+
     // Offset para evitar que se superpongan marcadores en la misma coordenada
     const yaEnEstePunto = bounds.filter(b => b[0] === v.lat && b[1] === v.lon).length;
+    // Si la coordenada está exactamente en el aeropuerto de origen pero el vuelo
+    // indica estar en progreso, intentar usar la última posición conocida distinta
+    // al aeropuerto (cache local `ultimosVuelosMapa` o `localStorage`).
+    let usedAltPos = false;
+    let altLat = lat;
+    let altLon = lon;
+    try {
+      const originAp = (v.origen && AEROPUERTOS[v.origen]) ? AEROPUERTOS[v.origen] : null;
+      const distToOrigin = originAp ? Math.hypot(lat - originAp.lat, lon - originAp.lon) : null;
+      const progressPct = (typeof progress === 'string') ? parseFloat(progress) : (typeof progress === 'number' ? progress : null);
+      const nearOrigin = distToOrigin !== null && distToOrigin < 0.04; // ~4-5km
+      if (originAp && nearOrigin && probablementeEnVuelo && progressPct !== null && progressPct > 5) {
+        const saved = Array.isArray(ultimosVuelosMapa) && ultimosVuelosMapa.length ? ultimosVuelosMapa : cargarUltimoMapaGuardado();
+        if (Array.isArray(saved) && saved.length) {
+          const keyToMatch = String(v.callsign || v.reg || v.ident || v.icao24 || '').toUpperCase();
+          const alt = saved.find(s => {
+            const sId = String(s.callsign || s.reg || s.ident || s.icao24 || '').toUpperCase();
+            if (!sId || !keyToMatch) return false;
+            // coincidencia por substring para tolerancia de formatos
+            if (!sId.includes(keyToMatch) && !keyToMatch.includes(sId)) return false;
+            const sLat = parseFloat(s.lat); const sLon = parseFloat(s.lon);
+            if (!Number.isFinite(sLat) || !Number.isFinite(sLon)) return false;
+            // tomar sólo si está claramente fuera del aeropuerto
+            return Math.hypot(sLat - originAp.lat, sLon - originAp.lon) > 0.05;
+          });
+          if (alt) {
+            altLat = parseFloat(alt.lat);
+            altLon = parseFloat(alt.lon);
+            usedAltPos = true;
+            console.info(`ℹ️ Usando última posición conocida para ${v.callsign||v.reg}: ${altLat},${altLon} (orig: ${originAp.lat},${originAp.lon})`);
+          }
+        }
+      }
+    } catch (e) { console.warn('Error buscando última posición conocida', e); }
+
     const offsetLat = yaEnEstePunto * 0.18;
     const offsetLon = yaEnEstePunto * 0.18;
-    const latForMarker = lat + offsetLat;
-    const lonForMarker = lon + offsetLon;
+    const latForMarker = altLat + offsetLat;
+    const lonForMarker = altLon + offsetLon;
     const marker = L.marker([latForMarker, lonForMarker], { icon }).bindPopup(popup).addTo(mapaPlanVuelos);
     markersAviones.push(marker);
-    bounds.push([lat, lon]);
+    bounds.push([altLat, altLon]);
 
     // ← NUEVO: solo dibuja ruta si está en vuelo real (no programado, no en tierra)
     if (!esProgramado && v.origen && v.destino && AEROPUERTOS[v.origen] && AEROPUERTOS[v.destino]) {
